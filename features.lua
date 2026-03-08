@@ -1,5 +1,5 @@
 -- ============================================================
---  features.lua | Movimiento Pro v5 (Waypoints Edition)
+--  features.lua | Movimiento Pro v6 (Unleashed Edition)
 -- ============================================================
 local Features = {}
 
@@ -91,7 +91,7 @@ function Features.ToggleFly(state)
     end
 end
 
--- Función Teleport Exacto
+-- Función Teleport
 function Features.TeleportTo(x, y, z)
     local char = player.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")

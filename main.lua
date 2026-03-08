@@ -9,8 +9,6 @@ local UI = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
 ))()
 
-local Games = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/games.lua"))()(UI)
-
 local Fluent      = UI.Fluent
 local Window      = UI.Window
 local Tabs        = UI.Tabs
@@ -133,9 +131,7 @@ Tabs.Profile:AddParagraph({
         "  Server ID    " .. (#sessionId > 28 and sessionId:sub(1,26).."..." or sessionId),
         "  Server Size  " .. tostring(#Players:GetPlayers()) .. " / " ..
                              tostring(Players.MaxPlayers) .. " players",
-        "  VIP Server   " .. try(function()
-            return game.VIPServerId ~= "" and "Yes" or "No"
-        end, "N/A (Client-restricted)"),
+        "  VIP Server   " .. tostring(game.VIPServerId ~= "" and "Yes" or "No"),
     }, "\n"),
 })
 

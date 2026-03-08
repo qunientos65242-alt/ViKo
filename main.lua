@@ -133,7 +133,9 @@ Tabs.Profile:AddParagraph({
         "  Server ID    " .. (#sessionId > 28 and sessionId:sub(1,26).."..." or sessionId),
         "  Server Size  " .. tostring(#Players:GetPlayers()) .. " / " ..
                              tostring(Players.MaxPlayers) .. " players",
-        "  VIP Server   " .. tostring(game.VIPServerId ~= "" and "Yes" or "No"),
+        "  VIP Server   " .. try(function()
+            return game.VIPServerId ~= "" and "Yes" or "No"
+        end, "N/A (Client-restricted)"),
     }, "\n"),
 })
 

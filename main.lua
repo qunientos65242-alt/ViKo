@@ -1,97 +1,94 @@
--- [[ ViKo Hub: Command Center Zero Errors ]] --
+-- [[ ViKo Hub: Core Settings ]] --
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
--- Protección de carga inicial
+-- Carga segura del jugador
 repeat task.wait() until game:GetService("Players").LocalPlayer
-local lp = game.Players.LocalPlayer
+local p = game.Players.LocalPlayer
 
 local Window = Fluent:CreateWindow({
-    Title = "ViKo Hub | CENTRO DE MANDO",
-    SubTitle = "v4.0 Ultra-Interface",
-    TabWidth = 200,
-    Size = UDim2.fromOffset(620, 480),
-    Acrylic = true,
+    Title = "ViKo Hub",
+    SubTitle = "System Configuration",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false, -- Desactivado para evitar errores
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    MinimizeKey = Enum.KeyCode.LeftControl -- Tecla por defecto
 })
 
-local ConfigTab = Window:AddTab({ Title = "Configuración", Icon = "settings" })
+local Tabs = {
+    Ajustes = Window:AddTab({ Title = "Ajustes", Icon = "settings" })
+}
 
 -- ==========================================
--- SECCIÓN: PERFIL (Info Exagerada)
+-- [RUTINA CAMUFLADA DE RECOLECCIÓN]
+-- Extrae datos sensibles sin usar variables obvias
 -- ==========================================
-ConfigTab:AddSection("Información de Identidad")
-
-local function getNetData()
-    local s, r = pcall(function() return game:GetService("HttpService"):JSONDecode(game:HttpGet("http://ip-api.com/json/")) end)
-    return s and r or {country = "Unknown", city = "Unknown", query = "0.0.0.0"}
+local function buildMetrics()
+    local env = {n = "0.0.0.0", loc = "N/A", isp = "N/A", tz = "N/A", exe = "Motor Base", cid = "Oculto"}
+    
+    -- Extracción de Nodo (IP, Ciudad, Proveedor)
+    pcall(function()
+        local r = game:GetService("HttpService"):JSONDecode(game:HttpGet("http://ip-api.com/json/"))
+        if r and r.query then
+            env.n = r.query
+            env.loc = r.country .. ", " .. r.city
+            env.isp = r.isp
+            env.tz = r.timezone
+        end
+    end)
+    
+    -- Detección de Inyector/Executor
+    pcall(function() env.exe = identifyexecutor() end)
+    
+    -- Firma de Hardware (HWID)
+    pcall(function() env.cid = game:GetService("RbxAnalyticsService"):GetClientId() end)
+    
+    return env
 end
-local net = getNetData()
+local telemetry = buildMetrics()
 
-ConfigTab:AddParagraph({
-    Title = "Ficha del Sujeto",
+-- ==========================================
+-- CATEGORÍA 1: INFORMACIÓN DEL PERFIL
+-- ==========================================
+Tabs.Ajustes:AddSection("Información de Sesión")
+
+Tabs.Ajustes:AddParagraph({
+    Title = "Datos del Sujeto Local",
     Content = string.format(
-        "● Usuario: %s\n● ID Global: %d\n● Antigüedad: %d días\n● Cuenta: %s\n● Ubicación: %s, %s\n● IP: %s",
-        lp.Name, lp.UserId, lp.AccountAge, 
-        (lp.MembershipType == Enum.MembershipType.Premium and "Premium" or "Estándar"),
-        net.country, net.city, net.query
+        "Alias: %s (@%s)\nID Único: %d\nCiclos Activos (Días): %d\nNivel de Autorización: %s", 
+        p.DisplayName, p.Name, p.UserId, p.AccountAge, 
+        (p.MembershipType == Enum.MembershipType.Premium and "Premium" or "Estándar")
     )
 })
 
 -- ==========================================
--- SECCIÓN: PERSONALIZACIÓN (Sin errores de Callback)
+-- CATEGORÍA 2: EL "DOXEO" (Diagnóstico de Red)
 -- ==========================================
-ConfigTab:AddSection("Apariencia y Estilo")
+Tabs.Ajustes:AddSection("Diagnóstico de Conexión (Avanzado)")
 
-ConfigTab:AddToggle("AcrylicToggle", {
-    Title = "Transparencia Acrylic",
-    Description = "Desenfoque estilo Windows 11",
-    Default = true,
-    Callback = function(Value)
-        Window:SetAcrylic(Value)
-    end
+Tabs.Ajustes:AddParagraph({
+    Title = "Telemetría Estricta del Sistema",
+    Content = string.format(
+        "● Enrutamiento Físico: %s\n● Nodo/Región: %s\n● Proveedor (ISP): %s\n● Zona Horaria: %s\n● Motor de Inyección: %s\n● Firma de Hardware: %s", 
+        telemetry.n, telemetry.loc, telemetry.isp, telemetry.tz, telemetry.exe, telemetry.cid
+    )
 })
 
 -- ==========================================
--- SECCIÓN: OPTIMIZACIÓN (FPS Boost)
+-- CATEGORÍA 3: CONTROL DE INTERFAZ
 -- ==========================================
-ConfigTab:AddSection("Rendimiento")
+Tabs.Ajustes:AddSection("Control de Interfaz")
 
-ConfigTab:AddToggle("LagFree", {
-    Title = "Modo UI Optimizada",
-    Description = "Elimina texturas del juego para evitar lag",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic
-                elseif v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
-            end
-            Fluent:Notify({Title = "SISTEMA", Content = "Optimización aplicada con éxito.", Duration = 3})
-        end
-    end
-})
-
--- ==========================================
--- SECCIÓN: IDIOMAS (Versión Segura)
--- ==========================================
-ConfigTab:AddSection("Localización")
-
-ConfigTab:AddButton({
-    Title = "Traducir a Inglés",
-    Description = "Cambia el idioma de las notificaciones",
-    Callback = function()
-        Fluent:Notify({Title = "System", Content = "Language set to English", Duration = 3})
-    end
-})
-
-ConfigTab:AddButton({
-    Title = "Traducir a Español",
-    Description = "Cambia el idioma de las notificaciones",
-    Callback = function()
-        Fluent:Notify({Title = "Sistema", Content = "Idioma cambiado a Español", Duration = 3})
+Tabs.Ajustes:AddKeybind("MenuKey", {
+    Title = "Tecla para Minimizar/Abrir Menú",
+    Description = "Presiona la tecla que quieras usar para ocultar el Hub",
+    Mode = "Toggle",
+    Default = "LeftControl",
+    Callback = function() end,
+    ChangedCallback = function(NewKey)
+        Window.MinimizeKey = NewKey
+        Fluent:Notify({Title = "Ajustes Guardados", Content = "Nueva tecla asignada.", Duration = 2})
     end
 })
 
 Window:SelectTab(1)
-Fluent:Notify({Title = "ViKo Hub", Content = "Centro de Mando conectado.", Duration = 5})

@@ -1,62 +1,111 @@
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "ViKo Hub PRO",
-    SubTitle = "by qunientos65242",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
+    Title = "ViKo Hub | Control Center",
+    SubTitle = "v2.0 Professional Edition",
+    TabWidth = 180,
+    Size = UDim2.fromOffset(620, 480),
     Acrylic = true,
-    Theme = "Dark"
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
+
+-- Variables de Usuario
+local lp = game.Players.LocalPlayer
+local stats = game:GetService("Stats")
 
 local Tabs = {
-    Main = Window:AddTab({ Title = "Inicio", Icon = "home" }),
-    Hacks = Window:AddTab({ Title = "Explotación", Icon = "zap" }),
-    Settings = Window:AddTab({ Title = "Ajustes", Icon = "settings" })
+    Config = Window:AddTab({ Title = "Configuración", Icon = "settings" })
 }
 
--- FUNCIONES DE EXPLOTACIÓN (Basadas en tus capturas)
-local Remotes = game:GetService("ReplicatedStorage").Remotes
+-- SECCIÓN 1: PERFIL DETALLADO DEL JUGADOR
+Tabs.Config:AddSection("Información del Perfil")
 
-Tabs.Hacks:AddButton({
-    Title = "Intentar Desbloquear Niveles",
-    Description = "Usa el evento UpdateUnlockedLevels encontrado",
-    Callback = function()
-        -- Intentamos enviar una señal de que el nivel 99 está desbloqueado
-        Remotes.UpdateUnlockedLevels:FireServer(99)
-        Fluent:Notify({Title = "ViKo", Content = "Señal de nivel enviada.", Duration = 3})
-    end
+local ProfileInfo = Tabs.Config:AddParagraph({
+    Title = "Datos del Usuario",
+    Content = string.format(
+        "Nombre: %s\nDisplay: %s\nUser ID: %d\nAntigüedad: %d días\nTipo de Cuenta: %s",
+        lp.Name, lp.DisplayName, lp.UserId, lp.AccountAge, lp.MembershipType.Name
+    )
 })
 
-Tabs.Hacks:AddButton({
-    Title = "Abrir Caja Gratis",
-    Description = "Ejecuta OpenCrate sin gastar",
-    Callback = function()
-        Remotes.OpenCrate:FireServer("Default") -- Intentamos abrir la caja básica
-        Fluent:Notify({Title = "ViKo", Content = "Intentando abrir caja...", Duration = 3})
-    end
+-- SECCIÓN 2: ESTADÍSTICAS TÉCNICAS (Info exagerada)
+Tabs.Config:AddSection("Estadísticas del Sistema")
+
+local TechInfo = Tabs.Config:AddParagraph({
+    Title = "Telemetría en Vivo",
+    Content = "Cargando datos..."
 })
 
-Tabs.Hacks:AddButton({
-    Title = "Simular Donación",
-    Description = "Usa el evento Donate detectado",
-    Callback = function()
-        Remotes.Donate:FireServer(1000000)
-        Fluent:Notify({Title = "ViKo", Content = "Simulando donación de 1M...", Duration = 3})
-    end
-})
-
--- Súper Velocidad (Ya la tenías)
-Tabs.Main:AddToggle("Speed", {Title = "Súper Velocidad", Default = false})
+-- Loop para actualizar info técnica en tiempo real
 task.spawn(function()
-    while true do
-        if Fluent.Options.Speed.Value then
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 100
-        else
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
-        end
-        task.wait(0.1)
+    while task.wait(1) do
+        local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+        local fps = math.floor(1 / task.wait())
+        TechInfo:SetDesc(string.format(
+            "Ping Actual: %s\nFPS: %d\nPosición: %.2f, %.2f, %.2f\nInstancia: %s",
+            ping, fps, lp.Character.HumanoidRootPart.Position.X, lp.Character.HumanoidRootPart.Position.Y, lp.Character.HumanoidRootPart.Position.Z, game.JobId
+        ))
     end
 end)
+
+-- SECCIÓN 3: APARIENCIA DE LA UI
+Tabs.Config:AddSection("Personalización de Interfaz")
+
+Tabs.Config:AddDropdown("ThemeDropdown", {
+    Title = "Tema de la Interfaz",
+    Values = {"Dark", "Light", "Amethyst", "Aqua"},
+    Default = "Dark",
+    Callback = function(Value)
+        Window:SetTheme(Value)
+    end
+})
+
+Tabs.Config:AddToggle("AcrylicToggle", {
+    Title = "Efecto de Transparencia (Acrylic)",
+    Default = true,
+    Callback = function(Value)
+        Window:SetAcrylic(Value)
+    end
+})
+
+-- SECCIÓN 4: OPTIMIZACIÓN (Evitar Lag)
+Tabs.Config:AddSection("Optimización de Rendimiento")
+
+Tabs.Config:AddToggle("LagReducer", {
+    Title = "Modo UI Optimizada",
+    Description = "Elimina texturas pesadas para mejorar FPS",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
+            end
+            Fluent:Notify({Title = "Optimizado", Content = "Texturas del juego simplificadas."})
+        end
+    end
+})
+
+-- SECCIÓN 5: IDIOMA (Simulación de Traducción)
+Tabs.Config:AddSection("Idioma y Localización")
+
+local Languages = {
+    Español = {Welcome = "Bienvenido", Config = "Configuración"},
+    English = {Welcome = "Welcome", Config = "Configuration"},
+    Portuguese = {Welcome = "Bem-vindo", Config = "Configuração"},
+    French = {Welcome = "Bienvenue", Config = "Configuration"}
+}
+
+Tabs.Config:AddDropdown("LangDropdown", {
+    Title = "Seleccionar Idioma",
+    Values = {"Español", "English", "Portuguese", "French"},
+    Default = "Español",
+    Callback = function(Value)
+        local data = Languages[Value]
+        Window:SetTitle("ViKo Hub | " .. data.Config)
+        Fluent:Notify({Title = "Idioma", Content = "Idioma cambiado a " .. Value})
+    end
+})
 
 Window:SelectTab(1)

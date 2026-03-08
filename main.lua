@@ -1,225 +1,116 @@
 -- ============================================================
---  main.lua  |  ViKo Script Hub  v1.0.9
---  Main logic. Interface is defined in ui_library.lua.
+--  main.lua | ViKo Script Hub v1.1.0 - FIXED CATEGORIES
 -- ============================================================
 
--- ── Load interface from repository ───────────────────────────
-local UI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
-))()
+local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"))()
+local Fluent, Window, Tabs = UI.Fluent, UI.Window, UI.Tabs
 
-local Fluent      = UI.Fluent
-local Window      = UI.Window
-local Tabs        = UI.Tabs
-local SaveManager = UI.SaveManager
+local Features = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/refs/heads/main/features.lua"))()
 
--- ── Cargar Funciones Externas ────────────────────────────────
-local Features = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/refs/heads/main/features.lua"
-))()
-
--- ── Constants ────────────────────────────────────────────────
-local SCRIPT_VERSION = "1.0.9"
-local URL_REPO       = "https://github.com/qunientos65242-alt/ViKo"
-local URL_UI         = "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
-
--- ── Roblox Services ──────────────────────────────────────────
-local Players       = game:GetService("Players")
-local RunService    = game:GetService("RunService")
-local MarketService = game:GetService("MarketplaceService")
-local StatsService  = game:GetService("Stats")
-
-local player    = Players.LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+local player = Players.LocalPlayer
 local startTick = tick()
 
--- ════════════════════════════════════════════════════════════
---  HELPER FUNCTIONS
--- ════════════════════════════════════════════════════════════
-
-local function try(fn, fallback)
-    local ok, res = pcall(fn)
-    if ok and res ~= nil then return res end
-    return fallback
-end
-
-local function round(n)
-    return math.floor(n + 0.5)
-end
-
-local function getExecutor()
-    local name = try(function() return identifyexecutor and identifyexecutor() or nil end, nil)
-    if name then return tostring(name) end
-    name = try(function() return getexecutorname and getexecutorname() or nil end, nil)
-    if name then return tostring(name) end
-    return "Unknown"
-end
-
-local function supports(name)
-    if rawget(_G, name) ~= nil then return true end
-    local ok, env = pcall(function() return type(getfenv) == "function" and getfenv() or nil end)
-    return ok and env and env[name] ~= nil
-end
-
-local function accountAge()
-    local days = try(function() return player.AccountAge end, nil)
-    if not days then return "N/A" end
-    if days < 1   then return "Today" end
-    if days < 365 then return ("%.1f month(s)"):format(days / 30) end
-    return ("%.1f year(s)"):format(days / 365)
-end
-
-local function gameName()
-    local info = try(function() return MarketService:GetProductInfo(game.PlaceId) end, nil)
-    return (info and info.Name) or tostring(game.PlaceId)
-end
-
+-- ── FUNCIONES DE AYUDA ──────────────────────────────────────
+local function round(n) return math.floor(n + 0.5) end
 local function formatUptime(s)
     s = math.floor(s)
-    if s < 60   then return s .. "s" end
-    if s < 3600 then return ("%dm %ds"):format(math.floor(s/60), s%60) end
-    return ("%dh %dm %ds"):format(math.floor(s/3600), math.floor((s%3600)/60), s%60)
+    if s < 60 then return s.."s" end
+    if s < 3600 then return math.floor(s/60).."m ".. (s%60).."s" end
+    return math.floor(s/3600).."h "..math.floor((s%3600)/60).."m"
 end
 
 -- ════════════════════════════════════════════════════════════
---  TAB: MAIN (Movement Enhancements)
+--  CATEGORÍA: MAIN (MOVIMIENTO)
 -- ════════════════════════════════════════════════════════════
-local MainSection = Tabs.Main:AddSection("Movement & Hacks")
+local MSection = Tabs.Main:AddSection("Movement Enhancements")
 
--- SPEED
-local SpeedToggle = Tabs.Main:AddToggle("SpeedToggle", { Title = "Speed Hack", Default = false, Callback = function(V) Features.Enabled = V end })
-Tabs.Main:AddKeybind("SpeedKey", { Title = "Keybind: Speed", Mode = "Toggle", Default = nil, Callback = function(V) SpeedToggle:SetValue(V) end })
-Tabs.Main:AddSlider("WalkSpeed", { Title = "Walk Speed", Default = 16, Min = 16, Max = 1000, Rounding = 0, Callback = function(V) Features.WalkSpeedValue = V end })
+local SToggle = Tabs.Main:AddToggle("SpeedT", { Title = "Speed Hack", Default = false, Callback = function(v) Features.Enabled = v end })
+Tabs.Main:AddKeybind("SpeedK", { Title = "Key: Speed", Mode = "Toggle", Callback = function(v) SToggle:SetValue(v) end })
+Tabs.Main:AddSlider("SpeedS", { Title = "Speed Value", Default = 16, Min = 16, Max = 1000, Rounding = 0, Callback = function(v) Features.WalkSpeedValue = v end })
 
--- FLY
-local FlyToggle = Tabs.Main:AddToggle("FlyToggle", { Title = "Fly Mode (High IQ)", Default = false, Callback = function(V) Features.ToggleFly(V) end })
-Tabs.Main:AddKeybind("FlyKey", { Title = "Keybind: Fly", Mode = "Toggle", Default = nil, Callback = function(V) FlyToggle:SetValue(V) end })
-Tabs.Main:AddSlider("FlySpeed", { Title = "Fly Speed", Default = 50, Min = 10, Max = 1000, Rounding = 0, Callback = function(V) Features.FlySpeed = V end })
+local FToggle = Tabs.Main:AddToggle("FlyT", { Title = "Fly Mode", Default = false, Callback = function(v) Features.ToggleFly(v) end })
+Tabs.Main:AddKeybind("FlyK", { Title = "Key: Fly", Mode = "Toggle", Callback = function(v) FToggle:SetValue(v) end })
+Tabs.Main:AddSlider("FlyS", { Title = "Fly Speed", Default = 50, Min = 10, Max = 1000, Rounding = 0, Callback = function(v) Features.FlySpeed = v end })
 
--- OTHERS
-local JumpToggle = Tabs.Main:AddToggle("InfJump", { Title = "Infinite Jump", Default = false, Callback = function(V) Features.InfJump = V end })
-Tabs.Main:AddKeybind("JumpKey", { Title = "Keybind: Inf Jump", Mode = "Toggle", Default = nil, Callback = function(V) JumpToggle:SetValue(V) end })
+local JToggle = Tabs.Main:AddToggle("JumpT", { Title = "Inf Jump", Default = false, Callback = function(v) Features.InfJump = v end })
+Tabs.Main:AddKeybind("JumpK", { Title = "Key: Jump", Mode = "Toggle", Callback = function(v) JToggle:SetValue(v) end })
 
-local NoclipToggle = Tabs.Main:AddToggle("Noclip", { Title = "Noclip (Safe)", Default = false, Callback = function(V) Features.Noclip = V end })
-Tabs.Main:AddKeybind("NoclipKey", { Title = "Keybind: Noclip", Mode = "Toggle", Default = nil, Callback = function(V) NoclipToggle:SetValue(V) end })
+local NToggle = Tabs.Main:AddToggle("NoclipT", { Title = "Noclip", Default = false, Callback = function(v) Features.Noclip = v end })
+Tabs.Main:AddKeybind("NoclipK", { Title = "Key: Noclip", Mode = "Toggle", Callback = function(v) NToggle:SetValue(v) end })
 
--- ── WAYPOINT SYSTEM ─────────────────────────────────────────
-local WaypointSection = Tabs.Main:AddSection("Waypoints System")
+-- ── WAYPOINTS ───────────────────────────────────────────────
+local WSection = Tabs.Main:AddSection("Waypoints (Max 10)")
+local savedPoints, pointNames, selectedPoint, counter = {}, {}, nil, 1
 
-local savedPoints = {}
-local pointNames = {}
-local selectedPoint = nil
-local pointCounter = 1
+local WDropdown = Tabs.Main:AddDropdown("WDrop", { Title = "Saved Locations", Values = pointNames, Callback = function(v) selectedPoint = v end })
 
-local Dropdown = Tabs.Main:AddDropdown("WaypointSelect", {
-    Title = "Saved Locations",
-    Values = pointNames,
-    Multi = false,
-    Default = nil,
-    Callback = function(Value) selectedPoint = Value end
-})
-
-Tabs.Main:AddButton({
-    Title = "Save Current Location",
-    Callback = function()
-        if #pointNames >= 10 then return Fluent:Notify({Title="Limit", Content="Max 10 waypoints", Duration=3}) end
-        local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            local p = root.Position
-            local name = "Point #" .. pointCounter
-            pointCounter = pointCounter + 1
-            savedPoints[name] = {x = p.X, y = p.Y, z = p.Z}
-            table.insert(pointNames, name)
-            Dropdown:SetValues(pointNames)
-            Dropdown:SetValue(name)
-        end
+Tabs.Main:AddButton({ Title = "Save Current Location", Callback = function()
+    if #pointNames >= 10 then return end
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        local name = "Point #"..counter
+        savedPoints[name] = {x = root.Position.X, y = root.Position.Y, z = root.Position.Z}
+        table.insert(pointNames, name)
+        counter = counter + 1
+        WDropdown:SetValues(pointNames)
+        WDropdown:SetValue(name)
     end
-})
+end})
 
-Tabs.Main:AddButton({
-    Title = "Teleport to Selected",
-    Callback = function()
-        if selectedPoint and savedPoints[selectedPoint] then
-            local c = savedPoints[selectedPoint]
-            Features.TeleportTo(c.x, c.y, c.z)
-        end
+Tabs.Main:AddButton({ Title = "Teleport to Selected", Callback = function()
+    local c = savedPoints[selectedPoint]
+    if c then Features.TeleportTo(c.x, c.y, c.z) end
+end})
+
+Tabs.Main:AddButton({ Title = "Delete Point", Callback = function()
+    if not selectedPoint then return end
+    savedPoints[selectedPoint] = nil
+    local new = {}
+    for _, n in ipairs(pointNames) do if n ~= selectedPoint then table.insert(new, n) end end
+    pointNames = new
+    if #pointNames == 0 then
+        WDropdown:SetValues({"None"})
+        WDropdown:SetValue("None")
+    else
+        WDropdown:SetValues(pointNames)
+        WDropdown:SetValue(pointNames[1])
     end
-})
-
-Tabs.Main:AddButton({
-    Title = "Delete Selected Point",
-    Callback = function()
-        if selectedPoint and savedPoints[selectedPoint] then
-            savedPoints[selectedPoint] = nil
-            local newNames = {}
-            for _, n in ipairs(pointNames) do if n ~= selectedPoint then table.insert(newNames, n) end end
-            pointNames = newNames
-            
-            -- FIX BUG: Si no quedan puntos, poner "None"
-            if #pointNames == 0 then
-                Dropdown:SetValues({"None"})
-                Dropdown:SetValue("None")
-                selectedPoint = nil
-            else
-                Dropdown:SetValues(pointNames)
-                Dropdown:SetValue(pointNames[1])
-            end
-            Fluent:Notify({Title = "Deleted", Content = "Waypoint removed.", Duration = 2})
-        end
-    end
-})
+end})
 
 -- ════════════════════════════════════════════════════════════
---  TABS: PROFILE, FULL INFO & SETTINGS (RESTAURADOS)
+--  CATEGORÍA: PROFILE
 -- ════════════════════════════════════════════════════════════
--- [Aquí se mantiene exactamente el código de Perfil, Executor Info y Config que ya teníamos]
-local sessionId = try(function() return tostring(game.JobId) end, "N/A")
-
-Tabs.Profile:AddParagraph({
-    Title   = "Identity",
-    Content = "  Username: " .. player.Name .. "\n  Display Name: " .. player.DisplayName .. "\n  User ID: " .. tostring(player.UserId) .. "\n  Account Age: " .. accountAge()
-})
-
-local characterParagraph = Tabs.Profile:AddParagraph({ Title = "Character", Content = "Loading..." })
-local networkParagraph = Tabs.Profile:AddParagraph({ Title = "Network & Performance", Content = "Loading..." })
-
-Tabs.FullInfo:AddParagraph({
-    Title   = "System Info",
-    Content = "  Executor: " .. getExecutor() .. "\n  Script: v" .. SCRIPT_VERSION .. "\n  UI: Fluent"
-})
-
-local runtimeParagraph = Tabs.FullInfo:AddParagraph({ Title = "Runtime Stats", Content = "Loading..." })
-
-Tabs.Settings:AddSection("Interface")
-Tabs.Settings:AddDropdown("Theme", {
-    Title = "UI Theme", Values = { "Dark", "Light", "Darker", "Aqua", "Amethyst" }, Default = "Dark",
-    Callback = function(value) Fluent:SetTheme(value) end,
-})
+local PSection = Tabs.Profile:AddSection("User Info")
+Tabs.Profile:AddParagraph({ Title = "Identity", Content = "User: "..player.Name.."\nID: "..player.UserId })
+local charPara = Tabs.Profile:AddParagraph({ Title = "Character Stats", Content = "Loading..." })
 
 -- ════════════════════════════════════════════════════════════
---  LIVE UPDATE LOOP
+--  CATEGORÍA: FULL INFO
 -- ════════════════════════════════════════════════════════════
-local accumulator = 0
+local ISection = Tabs.FullInfo:AddSection("System Details")
+local runPara = Tabs.FullInfo:AddParagraph({ Title = "Runtime", Content = "Loading..." })
+
+-- ════════════════════════════════════════════════════════════
+--  CATEGORÍA: SETTINGS
+-- ════════════════════════════════════════════════════════════
+Tabs.Settings:AddDropdown("Theme", { Title = "Theme", Values = {"Dark", "Light", "Aqua", "Amethyst"}, Default = "Dark", Callback = function(v) Fluent:SetTheme(v) end })
+
+-- ── LOOP DE ACTUALIZACIÓN ───────────────────────────────────
 RunService.Heartbeat:Connect(function(dt)
-    accumulator = accumulator + dt
-    if accumulator < 1 then return end
-    accumulator = 0
-
     pcall(function()
         local fps = round(1/dt)
-        local ping = try(function() return round(player:GetNetworkPing() * 1000) end, 0)
-        local mem = try(function() return round(StatsService:GetTotalMemoryUsageMb()) end, 0)
-
-        runtimeParagraph:SetDesc("  Uptime: " .. formatUptime(tick() - startTick) .. "\n  FPS: " .. fps .. "\n  Ping: " .. ping .. "ms\n  Mem: " .. mem .. "MB")
-        networkParagraph:SetDesc("  FPS: " .. fps .. "\n  Ping: " .. ping .. "ms")
-
-        local char = player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local ping = round(player:GetNetworkPing()*1000)
+        runPara:SetDesc("Uptime: "..formatUptime(tick()-startTick).."\nFPS: "..fps.."\nPing: "..ping.."ms")
+        
+        local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
         if hum then
-            characterParagraph:SetDesc("  Health: " .. round(hum.Health) .. "/" .. round(hum.MaxHealth) .. "\n  WalkSpeed: " .. round(hum.WalkSpeed))
+            charPara:SetDesc("Health: "..round(hum.Health).."\nSpeed: "..round(hum.WalkSpeed))
         end
     end)
 end)
 
-Window:SetSubtitle("v" .. SCRIPT_VERSION .. " · " .. getExecutor())
 Window:SelectTab(1)
-Fluent:Notify({ Title = "ViKo loaded", Content = "Movement Hacks & Keybinds Ready!", Duration = 5 })
+Fluent:Notify({Title = "ViKo Hub", Content = "All categories FIXED!", Duration = 5})

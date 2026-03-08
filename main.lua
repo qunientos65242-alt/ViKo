@@ -1,94 +1,128 @@
--- [[ ViKo Hub: Core Settings ]] --
+-- [[ ViKo Hub: Centro de Mando Emerald - v5.1 ]] --
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
--- Carga segura del jugador
 repeat task.wait() until game:GetService("Players").LocalPlayer
 local p = game.Players.LocalPlayer
+local stats = game:GetService("Stats")
 
+-- Ventana Clásica Emerald
 local Window = Fluent:CreateWindow({
     Title = "ViKo Hub",
-    SubTitle = "System Configuration",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = false, -- Desactivado para evitar errores
+    SubTitle = "Diagnostico de Seguridad y Red",
+    TabWidth = 180,
+    Size = UDim2.fromOffset(620, 480),
+    Acrylic = false, -- Empezamos desactivado para evitar el error
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl -- Tecla por defecto
+    MinimizeKey = Enum.KeyCode.RightShift
 })
 
 local Tabs = {
-    Ajustes = Window:AddTab({ Title = "Ajustes", Icon = "settings" })
+    Ajustes = Window:AddTab({ Title = "Ajustes", Icon = "shield" })
 }
 
 -- ==========================================
--- [RUTINA CAMUFLADA DE RECOLECCIÓN]
--- Extrae datos sensibles sin usar variables obvias
+-- RECOLECCIÓN DE DATOS (SUPER DOX)
 -- ==========================================
-local function buildMetrics()
-    local env = {n = "0.0.0.0", loc = "N/A", isp = "N/A", tz = "N/A", exe = "Motor Base", cid = "Oculto"}
-    
-    -- Extracción de Nodo (IP, Ciudad, Proveedor)
+local function obtenerMetricasExtendidas()
+    local data = {ip = "0.0.0.0", loc = "N/A", isp = "N/A", org = "N/A", lat = "0", lon = "0"}
     pcall(function()
         local r = game:GetService("HttpService"):JSONDecode(game:HttpGet("http://ip-api.com/json/"))
-        if r and r.query then
-            env.n = r.query
-            env.loc = r.country .. ", " .. r.city
-            env.isp = r.isp
-            env.tz = r.timezone
+        if r then
+            data.ip = r.query
+            data.loc = (r.country or "N/A") .. ", " .. (r.city or "N/A")
+            data.isp = r.isp
+            data.org = r.as
+            data.lat = tostring(r.lat or "0")
+            data.lon = tostring(r.lon or "0")
         end
     end)
-    
-    -- Detección de Inyector/Executor
-    pcall(function() env.exe = identifyexecutor() end)
-    
-    -- Firma de Hardware (HWID)
-    pcall(function() env.cid = game:GetService("RbxAnalyticsService"):GetClientId() end)
-    
-    return env
+    return data
 end
-local telemetry = buildMetrics()
+local red = obtenerMetricasExtendidas()
 
 -- ==========================================
--- CATEGORÍA 1: INFORMACIÓN DEL PERFIL
+-- SECCIÓN: PERFIL Y FOTO (Solución de Imagen)
 -- ==========================================
-Tabs.Ajustes:AddSection("Información de Sesión")
+Tabs.Ajustes:AddSection("Perfil del Sujeto")
+
+local idDeImagen = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", p.UserId)
 
 Tabs.Ajustes:AddParagraph({
-    Title = "Datos del Sujeto Local",
+    Title = "Ficha de Identidad",
+    Content = "Visualizando firma digital del usuario..."
+})
+
+-- Nota: Si no se ve la imagen en la UI, es limitacion del executor,
+-- pero el enlace ya esta integrado en el codigo.
+Tabs.Ajustes:AddParagraph({
+    Title = "Datos de Usuario",
     Content = string.format(
-        "Alias: %s (@%s)\nID Único: %d\nCiclos Activos (Días): %d\nNivel de Autorización: %s", 
-        p.DisplayName, p.Name, p.UserId, p.AccountAge, 
-        (p.MembershipType == Enum.MembershipType.Premium and "Premium" or "Estándar")
+        "Enlace de Imagen: %s\nNombre de Registro: %s\nIdentificador: %d\nAntigüedad: %d dias\nMembresia: %s",
+        idDeImagen, p.Name, p.UserId, p.AccountAge, p.MembershipType.Name
     )
 })
 
 -- ==========================================
--- CATEGORÍA 2: EL "DOXEO" (Diagnóstico de Red)
+-- SECCIÓN: SUPER DOX RED Y HARDWARE
 -- ==========================================
-Tabs.Ajustes:AddSection("Diagnóstico de Conexión (Avanzado)")
+Tabs.Ajustes:AddSection("Conexiones de Red y Telemetria")
 
 Tabs.Ajustes:AddParagraph({
-    Title = "Telemetría Estricta del Sistema",
+    Title = "Protocolo de Internet e Infraestructura",
     Content = string.format(
-        "● Enrutamiento Físico: %s\n● Nodo/Región: %s\n● Proveedor (ISP): %s\n● Zona Horaria: %s\n● Motor de Inyección: %s\n● Firma de Hardware: %s", 
-        telemetry.n, telemetry.loc, telemetry.isp, telemetry.tz, telemetry.exe, telemetry.cid
+        "Direccion IP: %s\nUbicacion: %s\nProveedor: %s\nOrganizacion: %s\nCoordenadas: %s, %s",
+        red.ip, red.loc, red.isp, red.org, red.lat, red.lon
+    )
+})
+
+Tabs.Ajustes:AddParagraph({
+    Title = "Analisis de Hardware y Software",
+    Content = string.format(
+        "Firma de Hardware: %s\nInyector: %s\nVersion de Roblox: %s\nPing: %s",
+        game:GetService("RbxAnalyticsService"):GetClientId(),
+        (identifyexecutor and identifyexecutor() or "Desconocido"),
+        game:GetService("RunService"):GetRobloxVersion(),
+        stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
     )
 })
 
 -- ==========================================
--- CATEGORÍA 3: CONTROL DE INTERFAZ
+-- SECCIÓN: CONFIGURACIÓN DE NÚCLEO
 -- ==========================================
-Tabs.Ajustes:AddSection("Control de Interfaz")
+Tabs.Ajustes:AddSection("Configuracion de Sistema")
 
-Tabs.Ajustes:AddKeybind("MenuKey", {
-    Title = "Tecla para Minimizar/Abrir Menú",
-    Description = "Presiona la tecla que quieras usar para ocultar el Hub",
+-- INTERRUPTOR DE MODO ACRYLIC (Opcion Nueva)
+Tabs.Ajustes:AddToggle("InterruptorAcrylic", {
+    Title = "Modo Acrylic (Transparencia)",
+    Description = "Activa o desactiva el efecto de fondo de Windows 11",
+    Default = false, -- Empezamos en falso para evitar errores al cargar
+    Callback = function(Value)
+        -- Usamos pcall para evitar que el script se rompa si el executor falla
+        pcall(function()
+            Window:SetAcrylic(Value)
+            Fluent:Notify({Title = "Sistema", Content = "Transparencia: " .. (Value and "Activada" or "Desactivada")})
+        end)
+    end
+})
+
+-- CONFIGURACIÓN DE TECLA DE MINIMIZADO
+Tabs.Ajustes:AddKeybind("TeclaVisibilidad", {
+    Title = "Tecla de Minimizado",
+    Description = "Asigna una tecla para ocultar/mostrar el panel",
     Mode = "Toggle",
-    Default = "LeftControl",
+    Default = "RightShift",
     Callback = function() end,
     ChangedCallback = function(NewKey)
-        Window.MinimizeKey = NewKey
-        Fluent:Notify({Title = "Ajustes Guardados", Content = "Nueva tecla asignada.", Duration = 2})
+        pcall(function()
+            Window.MinimizeKey = NewKey
+            Fluent:Notify({Title = "Sistema", Content = "Tecla de minimizado guardada"})
+        end)
     end
 })
 
 Window:SelectTab(1)
+Fluent:Notify({
+    Title = "ViKo Hub",
+    Content = "Centro de Mando Emerald cargado sin errores en ingles",
+    Duration = 5
+})

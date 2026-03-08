@@ -1,5 +1,7 @@
+-- Esperar a que el juego cargue completamente
+if not game:IsLoaded() then game.Loaded:Wait() end
+
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 
 local Window = Fluent:CreateWindow({
     Title = "ViKo Hub | Control Center",
@@ -11,7 +13,6 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- Variables de Usuario
 local lp = game.Players.LocalPlayer
 local stats = game:GetService("Stats")
 
@@ -19,93 +20,60 @@ local Tabs = {
     Config = Window:AddTab({ Title = "Configuración", Icon = "settings" })
 }
 
--- SECCIÓN 1: PERFIL DETALLADO DEL JUGADOR
+-- SECCIÓN: PERFIL
 Tabs.Config:AddSection("Información del Perfil")
 
-local ProfileInfo = Tabs.Config:AddParagraph({
+local accountType = lp.MembershipType == Enum.MembershipType.Premium and "Premium" or "Normal"
+
+Tabs.Config:AddParagraph({
     Title = "Datos del Usuario",
-    Content = string.format(
-        "Nombre: %s\nDisplay: %s\nUser ID: %d\nAntigüedad: %d días\nTipo de Cuenta: %s",
-        lp.Name, lp.DisplayName, lp.UserId, lp.AccountAge, lp.MembershipType.Name
-    )
+    Content = string.format("Nombre: %s\nID: %d\nAntigüedad: %d días\nCuenta: %s", 
+        lp.Name, lp.UserId, lp.AccountAge, accountType)
 })
 
--- SECCIÓN 2: ESTADÍSTICAS TÉCNICAS (Info exagerada)
+-- SECCIÓN: TELEMETRÍA (Con protección contra errores)
 Tabs.Config:AddSection("Estadísticas del Sistema")
+local TechInfo = Tabs.Config:AddParagraph({ Title = "Telemetría en Vivo", Content = "Iniciando sensores..." })
 
-local TechInfo = Tabs.Config:AddParagraph({
-    Title = "Telemetría en Vivo",
-    Content = "Cargando datos..."
-})
-
--- Loop para actualizar info técnica en tiempo real
 task.spawn(function()
     while task.wait(1) do
-        local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
-        local fps = math.floor(1 / task.wait())
-        TechInfo:SetDesc(string.format(
-            "Ping Actual: %s\nFPS: %d\nPosición: %.2f, %.2f, %.2f\nInstancia: %s",
-            ping, fps, lp.Character.HumanoidRootPart.Position.X, lp.Character.HumanoidRootPart.Position.Y, lp.Character.HumanoidRootPart.Position.Z, game.JobId
-        ))
+        pcall(function() -- El pcall evita que el script se rompa si algo falla
+            local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+            local fps = math.floor(1 / task.wait())
+            local pos = "N/A"
+            
+            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local p = lp.Character.HumanoidRootPart.Position
+                pos = string.format("%.1f, %.1f, %.1f", p.X, p.Y, p.Z)
+            end
+            
+            TechInfo:SetDesc(string.format("Ping: %s\nFPS: %d\nPosición: %s", ping, fps, pos))
+        end)
     end
 end)
 
--- SECCIÓN 3: APARIENCIA DE LA UI
-Tabs.Config:AddSection("Personalización de Interfaz")
-
+-- SECCIÓN: APARIENCIA
+Tabs.Config:AddSection("Personalización")
 Tabs.Config:AddDropdown("ThemeDropdown", {
     Title = "Tema de la Interfaz",
     Values = {"Dark", "Light", "Amethyst", "Aqua"},
     Default = "Dark",
-    Callback = function(Value)
-        Window:SetTheme(Value)
-    end
+    Callback = function(Value) Window:SetTheme(Value) end
 })
 
-Tabs.Config:AddToggle("AcrylicToggle", {
-    Title = "Efecto de Transparencia (Acrylic)",
-    Default = true,
-    Callback = function(Value)
-        Window:SetAcrylic(Value)
-    end
-})
-
--- SECCIÓN 4: OPTIMIZACIÓN (Evitar Lag)
-Tabs.Config:AddSection("Optimización de Rendimiento")
-
+-- SECCIÓN: OPTIMIZACIÓN
 Tabs.Config:AddToggle("LagReducer", {
     Title = "Modo UI Optimizada",
-    Description = "Elimina texturas pesadas para mejorar FPS",
+    Description = "Baja la calidad gráfica para ganar FPS",
     Default = false,
     Callback = function(Value)
         if Value then
             for _, v in pairs(game:GetDescendants()) do
                 if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
             end
-            Fluent:Notify({Title = "Optimizado", Content = "Texturas del juego simplificadas."})
         end
     end
 })
 
--- SECCIÓN 5: IDIOMA (Simulación de Traducción)
-Tabs.Config:AddSection("Idioma y Localización")
-
-local Languages = {
-    Español = {Welcome = "Bienvenido", Config = "Configuración"},
-    English = {Welcome = "Welcome", Config = "Configuration"},
-    Portuguese = {Welcome = "Bem-vindo", Config = "Configuração"},
-    French = {Welcome = "Bienvenue", Config = "Configuration"}
-}
-
-Tabs.Config:AddDropdown("LangDropdown", {
-    Title = "Seleccionar Idioma",
-    Values = {"Español", "English", "Portuguese", "French"},
-    Default = "Español",
-    Callback = function(Value)
-        local data = Languages[Value]
-        Window:SetTitle("ViKo Hub | " .. data.Config)
-        Fluent:Notify({Title = "Idioma", Content = "Idioma cambiado a " .. Value})
-    end
-})
-
 Window:SelectTab(1)
+Fluent:Notify({Title = "ViKo Hub", Content = "Sistema de Control Cargado", Duration = 5})

@@ -1,41 +1,58 @@
 -- ============================================================
---  features.lua | Funciones de Movimiento
+--  features.lua | Movimiento Pro
 -- ============================================================
 local Features = {}
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
+local mouse = player:GetMouse()
 
 -- Variables de estado
-Features.WalkSpeedValue = 16 -- Velocidad por defecto de Roblox
+Features.WalkSpeedValue = 16
 Features.Enabled = false
+Features.InfJump = false
+Features.Noclip = false
+Features.Fly = false
+Features.FlySpeed = 50
 
--- Función para aplicar la velocidad
-local function applySpeed()
-    if not Features.Enabled then return end
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    if humanoid then
-        humanoid.WalkSpeed = Features.WalkSpeedValue
-    end
-end
-
--- Bucle para asegurar que la velocidad se mantenga (por si el juego la resetea)
-task.spawn(function()
-    while task.wait(0.5) do
-        if Features.Enabled then
-            applySpeed()
+-- Lógica de Salto Infinito
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if Features.InfJump then
+        local char = player.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
         end
     end
 end)
 
--- Resetear cuando el personaje reaparece
-player.CharacterAdded:Connect(function()
-    task.wait(1) -- Esperar a que cargue bien
+-- Lógica de Noclip y Velocidad (Bucle principal)
+RunService.Stepped:Connect(function()
+    local char = player.Character
+    if not char then return end
+
+    -- Noclip
+    if Features.Noclip then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+
+    -- Velocidad constante
     if Features.Enabled then
-        applySpeed()
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = Features.WalkSpeedValue end
     end
 end)
+
+-- Función Teleport (Click para teletransportarse)
+function Features.TeleportToMouse()
+    local char = player.Character
+    if char and mouse.Hit then
+        char:MoveTo(mouse.Hit.p)
+    end
+end
 
 return Features

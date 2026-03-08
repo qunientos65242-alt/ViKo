@@ -1,6 +1,4 @@
 local Library = {}
-
--- Cargamos el motor de Fluent (Estilo Windows 11)
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 function Library:Init(hubName, subText)
@@ -9,39 +7,21 @@ function Library:Init(hubName, subText)
         SubTitle = subText,
         TabWidth = 160,
         Size = UDim2.fromOffset(580, 460),
-        Acrylic = true, -- El efecto transparente de Win11
+        Acrylic = true, 
         Theme = "Dark",
         MinimizeKey = Enum.KeyCode.LeftControl
     })
 
-    local Tabs = {}
-    
-    -- Función para crear pestañas fácilmente
-    function Tabs:CreateTab(name, icon)
-        local NewTab = Window:AddTab({ Title = name, Icon = icon or "box" })
-        
-        local Elements = {}
-        
-        -- Función para añadir botones a la pestaña
-        function Elements:AddButton(title, desc, callback)
-            NewTab:AddButton({
-                Title = title,
-                Description = desc or "",
-                Callback = callback
-            })
-        end
+    local Tabs = {
+        Profile = Window:AddTab({ Title = "Perfil", Icon = "user" }),
+        Settings = Window:AddTab({ Title = "Configuración", Icon = "settings" })
+    }
 
-        return Elements
-    end
+    function Library:GetTabs() return Tabs end
+    function Library:GetWindow() return Window end
+    function Library:GetFluent() return Fluent end
 
-    -- Notificación al cargar
-    Fluent:Notify({
-        Title = hubName,
-        Content = "Interfaz cargada con éxito.",
-        Duration = 3
-    })
-
-    return Tabs
+    return Library
 end
 
 return Library

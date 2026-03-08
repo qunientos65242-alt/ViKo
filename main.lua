@@ -1,18 +1,12 @@
--- main.lua (Este es el que conectas a GitHub)
-local UI = loadstring(game:HttpGet("TU_URL_DE_GITHUB_DE_LA_LIBRERIA"))()
+local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"))()
+local Win = Lib:CreateWindow("ViKo Hub")
 
-local Window = UI:CreateWindow("ViKo Hub | Beta")
-
--- AQUÍ AGREGAS TUS OPCIONES SIN TOCAR EL DISEÑO
-Window:AddButton("Activar Fly", function()
-    print("El usuario activó Vuelo")
-    -- Aquí pones tu código de Fly
+-- BOTÓN EJEMPLO
+Win:AddButton("Fly Hack", function()
+    print("Vuelo Activado")
 end)
 
-Window:AddButton("Velocidad x100", function()
+-- BOTÓN EJEMPLO 2
+Win:AddButton("Speed x100", function()
     game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 100
-end)
-
-Window:AddButton("Infinito Salto", function()
-    -- Tu lógica de salto aquí
 end)

@@ -9,6 +9,8 @@ local UI = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
 ))()
 
+local Games = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/games.lua"))()(UI)
+
 local Fluent      = UI.Fluent
 local Window      = UI.Window
 local Tabs        = UI.Tabs

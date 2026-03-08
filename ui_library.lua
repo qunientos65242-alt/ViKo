@@ -14,12 +14,12 @@ local SaveManager = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"
 ))()
 
--- ── Load addon: interface manager ────────────────────────────
+-- ── Load addon: interface manager ─────────────────────────────
 local InterfaceManager = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"
 ))()
 
--- ── Main window ──────────────────────────────────────────────
+-- ── Main window ───────────────────────────────────────────────
 local Window = Fluent:CreateWindow({
     Title       = "ViKo Script Hub",
     SubTitle    = "Loading...",
@@ -32,19 +32,21 @@ local Window = Fluent:CreateWindow({
 
 -- ── Tabs ──────────────────────────────────────────────────────
 local Tabs = {
-    Profile  = Window:AddTab({ Title = "Profile",   Icon = "user"    }),
-    FullInfo = Window:AddTab({ Title = "Full Info",  Icon = "monitor" }),
+    Profile  = Window:AddTab({ Title = "Profile",  Icon = "user"     }),
+    FullInfo = Window:AddTab({ Title = "Full Info", Icon = "monitor"  }),
+    Settings = Window:AddTab({ Title = "Settings",  Icon = "settings" }),
 }
 
 -- ── Initialize addons ─────────────────────────────────────────
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:BuildInterfaceSection(Tabs.FullInfo)
-SaveManager:BuildConfigSection(Tabs.FullInfo)
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
 
 -- ── Export to main.lua ────────────────────────────────────────
 return {
-    Fluent = Fluent,
-    Window = Window,
-    Tabs   = Tabs,
+    Fluent      = Fluent,
+    Window      = Window,
+    Tabs        = Tabs,
+    SaveManager = SaveManager,
 }

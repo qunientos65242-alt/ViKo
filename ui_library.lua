@@ -1,50 +1,50 @@
 -- ============================================================
---  ui_library.lua  |  Configuracion de la Interfaz
---  Carga la libreria Fluent y construye la ventana con pestanas.
---  Toda la logica del script va en main.lua, no aqui.
+--  ui_library.lua  |  Interface Configuration
+--  Loads the Fluent library and builds the window with tabs.
+--  All script logic goes in main.lua, not here.
 -- ============================================================
 
--- ── Cargar libreria Fluent (repositorio oficial) ─────────────
+-- ── Load Fluent library (official repository) ─────────────────
 local Fluent = loadstring(game:HttpGet(
     "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
 ))()
 
--- ── Cargar complemento: gestor de guardado ───────────────────
-local GestorGuardado = loadstring(game:HttpGet(
+-- ── Load addon: save manager ──────────────────────────────────
+local SaveManager = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"
 ))()
 
--- ── Cargar complemento: gestor de interfaz ───────────────────
-local GestorInterfaz = loadstring(game:HttpGet(
+-- ── Load addon: interface manager ────────────────────────────
+local InterfaceManager = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"
 ))()
 
--- ── Ventana principal ────────────────────────────────────────
-local Ventana = Fluent:CreateWindow({
+-- ── Main window ──────────────────────────────────────────────
+local Window = Fluent:CreateWindow({
     Title       = "ViKo Script Hub",
-    SubTitle    = "Cargando...",
+    SubTitle    = "Loading...",
     TabWidth    = 160,
     Size        = UDim2.fromOffset(580, 460),
-    Acrylic     = true,   -- efecto acrilico estilo Windows 11
+    Acrylic     = true,   -- Windows 11 acrylic effect
     Theme       = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl,
 })
 
--- ── Pestanas ─────────────────────────────────────────────────
-local Pestanas = {
-    Perfil   = Ventana:AddTab({ Title = "Perfil",    Icon = "user"    }),
-    InfoFull = Ventana:AddTab({ Title = "Info Full", Icon = "monitor" }),
+-- ── Tabs ──────────────────────────────────────────────────────
+local Tabs = {
+    Profile  = Window:AddTab({ Title = "Profile",   Icon = "user"    }),
+    FullInfo = Window:AddTab({ Title = "Full Info",  Icon = "monitor" }),
 }
 
--- ── Inicializar complementos ─────────────────────────────────
-GestorGuardado:SetLibrary(Fluent)
-GestorInterfaz:SetLibrary(Fluent)
-GestorInterfaz:BuildInterfaceSection(Pestanas.InfoFull)
-GestorGuardado:BuildConfigSection(Pestanas.InfoFull)
+-- ── Initialize addons ─────────────────────────────────────────
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+InterfaceManager:BuildInterfaceSection(Tabs.FullInfo)
+SaveManager:BuildConfigSection(Tabs.FullInfo)
 
--- ── Exportar a main.lua ──────────────────────────────────────
+-- ── Export to main.lua ────────────────────────────────────────
 return {
-    Fluent   = Fluent,
-    Ventana  = Ventana,
-    Pestanas = Pestanas,
+    Fluent = Fluent,
+    Window = Window,
+    Tabs   = Tabs,
 }

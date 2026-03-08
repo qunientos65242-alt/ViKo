@@ -1,5 +1,5 @@
 -- ============================================================
---  features.lua | Movimiento Pro Pulido v3
+--  features.lua | Movimiento Pro (High IQ Edition) v4
 -- ============================================================
 local Features = {}
 
@@ -8,7 +8,6 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
--- Variables de estado
 Features.WalkSpeedValue = 16
 Features.Enabled = false
 Features.InfJump = false
@@ -16,9 +15,10 @@ Features.Noclip = false
 Features.Fly = false
 Features.FlySpeed = 50
 
-local bv, bg -- Objetos para el vuelo
+local bv, bg
+local flyConnection
 
--- Lógica de Salto Infinito
+-- Salto Infinito
 UserInputService.JumpRequest:Connect(function()
     if Features.InfJump then
         local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -26,36 +26,50 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Bucle de Noclip y Speed
+-- Bucle de Noclip Inteligente (¡No tira la ropa!) y Speed
 RunService.Stepped:Connect(function()
     local char = player.Character
     if not char then return end
+    
+    -- Noclip IQ: Solo afecta a las partes base del cuerpo, no a los accesorios
     if Features.Noclip then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+        for _, part in ipairs(char:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then 
+                part.CanCollide = false 
+            end
         end
     end
+    
+    -- Speed
     if Features.Enabled and not Features.Fly then
-        char.Humanoid.WalkSpeed = Features.WalkSpeedValue
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = Features.WalkSpeedValue end
     end
 end)
 
--- Vuelo Pulido (Sin caídas)
-task.spawn(function()
-    while true do
-        task.wait()
-        local char = player.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
+-- Vuelo High IQ (PlatformStand + RenderStepped)
+function Features.ToggleFly(state)
+    Features.Fly = state
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if state and root and hum then
+        hum.PlatformStand = true -- Evita animaciones raras y que te desarmes
         
-        if Features.Fly and root then
-            if not bv then
-                bv = Instance.new("BodyVelocity", root)
-                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                bg = Instance.new("BodyGyro", root)
-                bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                bg.P = 9e4
-            end
-            
+        bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Velocity = Vector3.zero
+        bv.Parent = root
+
+        bg = Instance.new("BodyGyro")
+        bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        bg.P = 9e4
+        bg.CFrame = root.CFrame
+        bg.Parent = root
+
+        if flyConnection then flyConnection:Disconnect() end
+        flyConnection = RunService.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             local dir = Vector3.new(0,0,0)
             
@@ -66,20 +80,27 @@ task.spawn(function()
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
             
-            bv.Velocity = dir * Features.FlySpeed
-            bg.CFrame = cam.CFrame
-        else
-            if bv then bv:Destroy() bv = nil end
-            if bg then bg:Destroy() bg = nil end
-        end
+            if dir.Magnitude > 0 then dir = dir.Unit end
+            if bv and bg then
+                bv.Velocity = dir * Features.FlySpeed
+                bg.CFrame = cam.CFrame
+            end
+        end)
+    else
+        if hum then hum.PlatformStand = false end
+        if bv then bv:Destroy() bv = nil end
+        if bg then bg:Destroy() bg = nil end
+        if flyConnection then flyConnection:Disconnect() flyConnection = nil end
     end
-end)
+end
 
--- Teletransporte por Coordenadas
+-- Teletransporte Exacto
 function Features.TeleportTo(x, y, z)
     local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(tonumber(x), tonumber(y), tonumber(z))
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if root then
+        -- Añadimos +3 en Y para evitar que te quedes atorado en el suelo
+        root.CFrame = CFrame.new(tonumber(x), tonumber(y) + 3, tonumber(z))
     end
 end
 

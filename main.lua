@@ -1,5 +1,9 @@
--- [[ ViKo Hub: Command Center Ultra ]] --
+-- [[ ViKo Hub: Command Center Ultra-Safe Edition ]] --
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+-- Esperamos a que el jugador esté listo para evitar errores de 'nil'
+repeat task.wait() until game:GetService("Players").LocalPlayer
+local lp = game.Players.LocalPlayer
 
 local Window = Fluent:CreateWindow({
     Title = "ViKo Hub | " .. "CENTRO DE MANDO",
@@ -11,46 +15,44 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- Variables de Entorno
-local lp = game.Players.LocalPlayer
-local stats = game:GetService("Stats")
-local http = game:GetService("HttpService")
-
--- Pestaña Única: Centro de Configuración
+-- Pestaña Única
 local ConfigTab = Window:AddTab({ Title = "Configuración", Icon = "settings" })
 
 -- ==========================================
--- CATEGORÍA: PERFIL DEL SUJETO (Info Exagerada)
+-- CATEGORÍA: PERFIL (Info Exagerada)
 -- ==========================================
-ConfigTab:AddSection("Identidad y Red")
+ConfigTab:AddSection("Perfil del Sujeto")
 
-local function getIpInfo()
+-- Intentamos obtener info de red con seguridad
+local function getDetailedInfo()
     local success, result = pcall(function()
-        return http:JSONDecode(game:HttpGet("http://ip-api.com/json/"))
+        return game:GetService("HttpService"):JSONDecode(game:HttpGet("http://ip-api.com/json/"))
     end)
-    if success then return result else return {country = "Unknown", city = "Unknown", query = "0.0.0.0"} end
+    return success and result or {country = "Unknown", city = "Unknown", query = "0.0.0.0"}
 end
 
-local ipData = getIpInfo()
+local net = getDetailedInfo()
 
 ConfigTab:AddParagraph({
-    Title = "Datos de Cuenta y Conexión",
+    Title = "Identidad y Telemetría",
     Content = string.format(
-        "● Usuario: %s\n● ID: %d\n● Antigüedad: %d días\n● Membresía: %s\n● Ubicación: %s, %s\n● Dirección IP: %s\n● HWID: %s",
-        lp.Name, lp.UserId, lp.AccountAge, (lp.MembershipType == Enum.MembershipType.Premium and "Premium" or "Estándar"),
-        ipData.country, ipData.city, ipData.query, game:GetService("RbxAnalyticsService"):GetClientId()
+        "● Usuario: %s\n● ID: %d\n● Display: %s\n● Antigüedad: %d días\n● Cuenta: %s\n● Región: %s, %s\n● IP Pública: %s\n● Cliente ID: %s",
+        lp.Name, lp.UserId, lp.DisplayName, lp.AccountAge, 
+        (lp.MembershipType == Enum.MembershipType.Premium and "💎 Premium" or "👤 Estándar"),
+        net.country, net.city, net.query, game:GetService("RbxAnalyticsService"):GetClientId()
     )
 })
 
 -- ==========================================
--- CATEGORÍA: APARIENCIA (Personalización)
+-- CATEGORÍA: APARIENCIA
 -- ==========================================
-ConfigTab:AddSection("Personalización Estética")
+ConfigTab:AddSection("Personalización Visual")
 
-ConfigTab:AddDropdown("ThemeSelect", {
-    Title = "Tema Maestro",
-    Description = "Cambia el color global de la interfaz",
-    Values = {"Dark", "Light", "Amethyst", "Aqua", "Rose"},
+-- Cambiar Temas (Corregido para evitar errores de método faltante)
+ConfigTab:AddDropdown("ThemeDropdown", {
+    Title = "Modo de Interfaz",
+    Description = "Cambia el estilo visual global",
+    Values = {"Dark", "Light", "Amethyst", "Aqua"},
     Default = "Dark",
     Callback = function(Value)
         Window:SetTheme(Value)
@@ -58,8 +60,8 @@ ConfigTab:AddDropdown("ThemeSelect", {
 })
 
 ConfigTab:AddToggle("AcrylicToggle", {
-    Title = "Efecto Acrylic (Windows 11)",
-    Description = "Activa el desenfoque de fondo",
+    Title = "Efecto Acrylic",
+    Description = "Desenfoque estilo Windows 11",
     Default = true,
     Callback = function(Value)
         Window:SetAcrylic(Value)
@@ -67,57 +69,47 @@ ConfigTab:AddToggle("AcrylicToggle", {
 })
 
 -- ==========================================
--- CATEGORÍA: OPTIMIZACIÓN (FPS Boost)
+-- CATEGORÍA: RENDIMIENTO (Anti-Lag)
 -- ==========================================
-ConfigTab:AddSection("Rendimiento del Sistema")
+ConfigTab:AddSection("Optimización de Sistema")
 
-ConfigTab:AddToggle("OptimizeUI", {
+ConfigTab:AddToggle("LagFree", {
     Title = "Modo UI Optimizada",
-    Description = "Elimina elementos visuales pesados para evitar lag",
+    Description = "Elimina sombras y texturas pesadas del juego",
     Default = false,
     Callback = function(Value)
         if Value then
-            -- Fuerza bruta de optimización
             for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.Material = Enum.Material.SmoothPlastic
-                elseif v:IsA("Decal") or v:IsA("Texture") then
-                    v.Transparency = 1
-                end
+                if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic
+                elseif v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
             end
             settings().Rendering.QualityLevel = 1
-            Fluent:Notify({Title = "SISTEMA", Content = "Optimización de motor aplicada.", Duration = 3})
+            Fluent:Notify({Title = "SISTEMA", Content = "Motor gráfico optimizado al máximo.", Duration = 3})
         end
     end
 })
 
 -- ==========================================
--- CATEGORÍA: IDIOMA (Traducción Simulada)
+-- CATEGORÍA: IDIOMA
 -- ==========================================
-ConfigTab:AddSection("Localización / Language")
+ConfigTab:AddSection("Localización")
 
-local LangMap = {
+local Translations = {
     ["Español"] = "CENTRO DE MANDO",
     ["English"] = "COMMAND CENTER",
     ["Português"] = "CENTRO DE COMANDO",
-    ["Français"] = "CENTRE DE CONTRÔLE",
-    ["日本語"] = "コマンドセンター"
+    ["Français"] = "CENTRE DE CONTRÔLE"
 }
 
-ConfigTab:AddDropdown("LanguageSelect", {
-    Title = "Idioma Global",
-    Description = "Cambia el lenguaje de las etiquetas",
-    Values = {"Español", "English", "Português", "Français", "日本語"},
+ConfigTab:AddDropdown("LangSelect", {
+    Title = "Seleccionar Idioma",
+    Values = {"Español", "English", "Português", "Français"},
     Default = "Español",
     Callback = function(Value)
-        Window:SetTitle("ViKo Hub | " .. LangMap[Value])
-        Fluent:Notify({
-            Title = "Language Update",
-            Content = "Interfaz sincronizada a: " .. Value,
-            Duration = 2
-        })
+        Window:SetTitle("ViKo Hub | " .. Translations[Value])
+        Fluent:Notify({Title = "Idioma", Content = "Cambiado a " .. Value})
     end
 })
 
 Window:SelectTab(1)
-Fluent:Notify({Title = "ViKo Hub", Content = "Centro de Mando Iniciado", Duration = 5})
+Fluent:Notify({Title = "ViKo Hub", Content = "Centro de Mando Activo", Duration = 5})

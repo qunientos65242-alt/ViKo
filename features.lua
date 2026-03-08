@@ -1,5 +1,5 @@
 -- ============================================================
---  features.lua | Movimiento Pro (High IQ Edition) v4
+--  features.lua | Movimiento Pro v5 (Waypoints Edition)
 -- ============================================================
 local Features = {}
 
@@ -26,12 +26,11 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Bucle de Noclip Inteligente (¡No tira la ropa!) y Speed
+-- Bucle de Noclip y Speed
 RunService.Stepped:Connect(function()
     local char = player.Character
     if not char then return end
     
-    -- Noclip IQ: Solo afecta a las partes base del cuerpo, no a los accesorios
     if Features.Noclip then
         for _, part in ipairs(char:GetChildren()) do
             if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then 
@@ -40,14 +39,13 @@ RunService.Stepped:Connect(function()
         end
     end
     
-    -- Speed
     if Features.Enabled and not Features.Fly then
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = Features.WalkSpeedValue end
     end
 end)
 
--- Vuelo High IQ (PlatformStand + RenderStepped)
+-- Vuelo High IQ
 function Features.ToggleFly(state)
     Features.Fly = state
     local char = player.Character
@@ -55,8 +53,7 @@ function Features.ToggleFly(state)
     local hum = char and char:FindFirstChildOfClass("Humanoid")
 
     if state and root and hum then
-        hum.PlatformStand = true -- Evita animaciones raras y que te desarmes
-        
+        hum.PlatformStand = true
         bv = Instance.new("BodyVelocity")
         bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         bv.Velocity = Vector3.zero
@@ -94,12 +91,11 @@ function Features.ToggleFly(state)
     end
 end
 
--- Teletransporte Exacto
+-- Función Teleport Exacto
 function Features.TeleportTo(x, y, z)
     local char = player.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if root then
-        -- Añadimos +3 en Y para evitar que te quedes atorado en el suelo
         root.CFrame = CFrame.new(tonumber(x), tonumber(y) + 3, tonumber(z))
     end
 end

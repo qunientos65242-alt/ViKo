@@ -1,279 +1,285 @@
 -- ============================================================
---  main.lua  |  Script principal
---  Versión   : 1.0.0
+--  main.lua  |  Script principal  v1.0.1 (bugfix)
 --  Requiere  : ui_library.lua (mismo repositorio)
 -- ============================================================
 
--- ── URLs del repositorio (¡actualiza con tu usuario/repo!) ───
-local REPO_USUARIO    = "qunientos65242-alt"
-local REPO_NOMBRE     = "ViKo"
-local RAMA            = "main"
+-- ── URLs del repositorio ─────────────────────────────────────
+local REPO_USUARIO = "TU_USUARIO"       -- ← cambia esto
+local REPO_NOMBRE  = "TU_REPOSITORIO"   -- ← cambia esto
+local RAMA         = "main"
 
-local BASE_URL = string.format(
-    "https://raw.githubusercontent.com/%s/%s/%s/",
-    REPO_USUARIO, REPO_NOMBRE, RAMA
-)
+local BASE_URL     = ("https://raw.githubusercontent.com/%s/%s/%s/")
+    :format(REPO_USUARIO, REPO_NOMBRE, RAMA)
 
 local URL_LIBRERIA = BASE_URL .. "ui_library.lua"
-local URL_REPO     = string.format(
-    "https://github.com/%s/%s", REPO_USUARIO, REPO_NOMBRE
-)
+local URL_REPO     = ("https://github.com/%s/%s"):format(REPO_USUARIO, REPO_NOMBRE)
+local VERSION_SCRIPT = "1.0.1"
 
-local VERSION_SCRIPT = "1.0.0"
-
--- ── Carga segura de la librería UI ───────────────────────────
+-- ── Carga segura de la libreria UI ───────────────────────────
 local function cargarLibreria()
-    local ok, contenido = pcall(function()
-        return game:HttpGet(URL_LIBRERIA, true)
+    local contenido
+    local ok, err = pcall(function()
+        contenido = game:HttpGet(URL_LIBRERIA, true)
     end)
 
-    if not ok or type(contenido) ~= "string" or contenido == "" then
-        error(string.format(
-            "[ScriptHub] No se pudo descargar ui_library.lua.\n" ..
-            "URL: %s\nError: %s",
-            URL_LIBRERIA, tostring(contenido)
-        ))
+    if not ok then
+        error("[ScriptHub] HttpGet fallo: " .. tostring(err))
+    end
+    if type(contenido) ~= "string" or #contenido < 10 then
+        error("[ScriptHub] Respuesta vacia o invalida desde: " .. URL_LIBRERIA)
     end
 
-    local fn, err = loadstring(contenido)
+    local fn, compErr = loadstring(contenido)
     if not fn then
-        error("[ScriptHub] Error al compilar ui_library.lua: " .. tostring(err))
+        error("[ScriptHub] Error al compilar ui_library.lua: " .. tostring(compErr))
     end
 
-    return fn()
+    local libOk, lib = pcall(fn)
+    if not libOk then
+        error("[ScriptHub] Error al ejecutar ui_library.lua: " .. tostring(lib))
+    end
+    return lib
 end
 
 local UiLibrary = cargarLibreria()
 
 -- ── Servicios ────────────────────────────────────────────────
-local Players    = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local Players        = game:GetService("Players")
+local RunService     = game:GetService("RunService")
+local MarketService  = game:GetService("MarketplaceService")
 
 local jugador    = Players.LocalPlayer
 local tickInicio = tick()
 
--- ── Helpers ──────────────────────────────────────────────────
+-- ── Utilidad: math.round seguro ──────────────────────────────
+-- math.round no existe en Luau base de Roblox
+local function redondear(n)
+    return math.floor(n + 0.5)
+end
+
+-- ── Utilidad: pcall con valor por defecto ────────────────────
+local function intentar(fn, defecto)
+    local ok, res = pcall(fn)
+    if ok and res ~= nil then return res end
+    return defecto
+end
+
+-- ── Detectar executor ────────────────────────────────────────
 local function obtenerExecutor()
-    if identifyexecutor then
-        local ok, nombre = pcall(identifyexecutor)
-        if ok and nombre then return tostring(nombre) end
+    local nombre = intentar(function()
+        return identifyexecutor and identifyexecutor() or nil
+    end, nil)
+    if nombre then return tostring(nombre) end
+
+    nombre = intentar(function()
+        return getexecutorname and getexecutorname() or nil
+    end, nil)
+    if nombre then return tostring(nombre) end
+
+    local firmas = {
+        { var = "KRNL_LOADED",       nombre = "Krnl"        },
+        { var = "syn",               nombre = "Synapse X"    },
+        { var = "fluxus",            nombre = "Fluxus"       },
+        { var = "DELTA_VERSION",     nombre = "Delta"        },
+        { var = "MACSPLOIT_VERSION", nombre = "MacSploit"    },
+    }
+    for _, firma in ipairs(firmas) do
+        local encontrado = intentar(function()
+            return rawget(_G, firma.var) ~= nil
+        end, false)
+        if encontrado then return firma.nombre end
     end
-    -- Fallbacks por firmas conocidas
-    if KRNL_LOADED             then return "Krnl" end
-    if syn                     then return "Synapse X" end
-    if fluxus                  then return "Fluxus" end
-    if getexecutorname         then
-        local ok, n = pcall(getexecutorname)
-        if ok and n then return tostring(n) end
-    end
+
     return "Desconocido"
 end
 
-local function soportaCapacidad(nombre)
-    return type(_G[nombre]) ~= "nil" or type(getfenv()[nombre]) ~= "nil"
-end
-
+-- ── Verificar capacidad del executor ─────────────────────────
 local function soportaFuncion(nombre)
-    -- Revisión en el entorno global del executor
-    local ok = pcall(function()
-        local fn = getfenv and getfenv()[nombre] or _G[nombre]
-        assert(fn ~= nil)
-    end)
-    return ok
-end
+    if rawget(_G, nombre) ~= nil then return true end
 
-local function edadCuenta()
-    -- AccountAge en días
-    local ok, edad = pcall(function()
-        return jugador.AccountAge
-    end)
-    if not ok then return "N/A" end
-    if edad < 30  then return string.format("%d día(s)", edad) end
-    if edad < 365 then return string.format("%.1f mes(es)", edad / 30) end
-    return string.format("%.1f año(s)", edad / 365)
-end
+    local tieneGetfenv = intentar(function()
+        return type(getfenv) == "function"
+    end, false)
 
-local function formatoUptime(segundos)
-    local s = math.floor(segundos)
-    if s < 60  then return string.format("%ds", s) end
-    if s < 3600 then
-        return string.format("%dm %ds", math.floor(s/60), s % 60)
+    if tieneGetfenv then
+        local entorno = intentar(getfenv, {})
+        if entorno and entorno[nombre] ~= nil then return true end
     end
-    return string.format("%dh %dm %ds",
-        math.floor(s/3600),
-        math.floor((s % 3600)/60),
-        s % 60
-    )
+
+    return false
 end
 
-local function colorEstado(activo)
-    return activo
-        and UiLibrary.COLORES.Exito
-        or  UiLibrary.COLORES.Error
+-- ── Edad de cuenta formateada ─────────────────────────────────
+local function edadCuenta()
+    local dias = intentar(function() return jugador.AccountAge end, nil)
+    if not dias then return "N/A" end
+    if dias < 1   then return "Hoy" end
+    if dias < 30  then return dias .. " dia(s)" end
+    if dias < 365 then return ("%.1f mes(es)"):format(dias / 30) end
+    return ("%.1f anno(s)"):format(dias / 365)
 end
 
--- ── Construcción de la UI ─────────────────────────────────────
+-- ── Nombre del juego (seguro) ────────────────────────────────
+local function nombreJuego()
+    local info = intentar(function()
+        return MarketService:GetProductInfo(game.PlaceId)
+    end, nil)
+    if info and info.Name then return info.Name end
+    return tostring(game.PlaceId)
+end
+
+-- ── Hora de inicio (os.date puede no existir) ────────────────
+local function horaInicio()
+    local hora = intentar(function()
+        return os.date and os.date("%H:%M:%S") or nil
+    end, nil)
+    return hora or ("tick: " .. tostring(redondear(tickInicio)))
+end
+
+-- ── Formato de uptime ────────────────────────────────────────
+local function formatoUptime(s)
+    s = math.floor(s)
+    if s < 60   then return s .. "s" end
+    if s < 3600 then return ("%dm %ds"):format(math.floor(s/60), s % 60) end
+    return ("%dh %dm %ds"):format(math.floor(s/3600), math.floor((s%3600)/60), s%60)
+end
+
+-- ════════════════════════════════════════════════════════════
+--  Construccion de la UI
+-- ════════════════════════════════════════════════════════════
 local ui = UiLibrary.new(
-    "⚡  Script Hub",
-    "v" .. VERSION_SCRIPT .. "  ·  " .. obtenerExecutor()
+    "Script Hub",
+    "v" .. VERSION_SCRIPT .. "  -  " .. obtenerExecutor()
+)
+
+local C = UiLibrary.COLORES
+
+-- ════════════════════════════════════════════════════════════
+--  TAB 1 - PERFIL
+-- ════════════════════════════════════════════════════════════
+local tabPerfil = ui:CrearTab("Perfil", "P")
+
+local secId = ui:CrearSeccion(tabPerfil, "Identidad")
+secId:AgregarEtiqueta("Nombre de usuario", jugador.Name)
+secId:AgregarEtiqueta("Nombre visible",    jugador.DisplayName)
+secId:AgregarEtiqueta("User ID",           tostring(jugador.UserId))
+secId:AgregarEtiqueta("Antiguedad",        edadCuenta())
+
+local secSesion = ui:CrearSeccion(tabPerfil, "Sesion Actual")
+
+local jobId = intentar(function() return tostring(game.JobId) end, "N/A")
+local jobIdCorto = #jobId > 22 and (jobId:sub(1, 20) .. "..") or jobId
+
+secSesion:AgregarEtiqueta("Job ID",       jobIdCorto)
+secSesion:AgregarEtiqueta("Nombre juego", nombreJuego())
+secSesion:AgregarEtiqueta("Place ID",     tostring(game.PlaceId))
+
+local itemPing = secSesion:AgregarEtiqueta("Ping", "Midiendo...")
+
+local secChar = ui:CrearSeccion(tabPerfil, "Personaje")
+
+local itemEquipo = secChar:AgregarEtiqueta("Equipo",
+    intentar(function()
+        return jugador.Team and jugador.Team.Name or "Sin equipo"
+    end, "Sin equipo"))
+
+local tieneChar = jugador.Character ~= nil
+local itemAvatar = secChar:AgregarEtiqueta(
+    "Avatar cargado",
+    tieneChar and "Si" or "No",
+    tieneChar and C.Exito or C.Error
 )
 
 -- ════════════════════════════════════════════════════════════
---  TAB 1 — PERFIL DEL JUGADOR
+--  TAB 2 - INFO FULL
 -- ════════════════════════════════════════════════════════════
-local tabPerfil = ui:CrearTab("Perfil", "👤")
+local tabInfo = ui:CrearTab("Info Full", "I")
 
--- Sección: Identidad
-local secIdentidad = ui:CrearSeccion(tabPerfil, "Identidad")
+local secExec = ui:CrearSeccion(tabInfo, "Executor")
+secExec:AgregarEtiqueta("Nombre detectado",   obtenerExecutor())
+secExec:AgregarEtiqueta("Version UI Library", UiLibrary.ObtenerVersionLibreria())
+secExec:AgregarEtiqueta("Version script",     VERSION_SCRIPT)
 
-local itemNombre      = secIdentidad:AgregarEtiqueta("Nombre de usuario",  jugador.Name)
-local itemDisplay     = secIdentidad:AgregarEtiqueta("Nombre visible",     jugador.DisplayName)
-local itemUserId      = secIdentidad:AgregarEtiqueta("User ID",            tostring(jugador.UserId))
-local itemEdad        = secIdentidad:AgregarEtiqueta("Antigüedad",         edadCuenta())
-
--- Sección: Sesión actual
-local secSesion = ui:CrearSeccion(tabPerfil, "Sesión Actual")
-
-local itemServidor    = secSesion:AgregarEtiqueta("Servidor (Job ID)",
-    string.sub(game.JobId, 1, 20) .. "…")
-local itemJuego       = secSesion:AgregarEtiqueta("Nombre del juego",
-    game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
-local itemPlaceId     = secSesion:AgregarEtiqueta("Place ID",
-    tostring(game.PlaceId))
-local itemPing        = secSesion:AgregarEtiqueta("Ping estimado", "Midiendo…")
-
--- Sección: Personaje
-local secPersonaje = ui:CrearSeccion(tabPerfil, "Personaje")
-
-local function actualizarDatosPersonaje()
-    local char = jugador.Character
-    if not char then
-        itemPing:Actualizar("Sin personaje")
-        return
-    end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        -- Mostrar equipo si existe
-        local equipo = jugador.Team
-        local nombreEquipo = equipo and equipo.Name or "Sin equipo"
-        -- Actualizar ping usando Stats si está disponible
-        local stats = Players:GetService and nil
-        pcall(function()
-            local pingValor = jugador:GetNetworkPing and
-                math.round(jugador:GetNetworkPing() * 1000) or "N/A"
-            itemPing:Actualizar(tostring(pingValor) .. " ms")
-        end)
-    end
-end
-
-local itemEquipo = secPersonaje:AgregarEtiqueta("Equipo",
-    (jugador.Team and jugador.Team.Name) or "Sin equipo")
-local itemHumanoidDesc = secPersonaje:AgregarEtiqueta("Avatar cargado",
-    jugador.Character and "Sí" or "No",
-    jugador.Character and UiLibrary.COLORES.Exito or UiLibrary.COLORES.Error)
-
--- ════════════════════════════════════════════════════════════
---  TAB 2 — INFO FULL (sin controles, solo datos técnicos)
--- ════════════════════════════════════════════════════════════
-local tabInfo = ui:CrearTab("Info Full", "🖥")
-
--- ── Sección: Executor ─────────────────────────────────────────
-local secExecutor = ui:CrearSeccion(tabInfo, "Executor")
-
-local itemNombreExec  = secExecutor:AgregarEtiqueta("Nombre detectado",   obtenerExecutor())
-local itemVersionLib  = secExecutor:AgregarEtiqueta("Versión UI Library",
-    UiLibrary.ObtenerVersionLibreria())
-local itemVersionScript = secExecutor:AgregarEtiqueta("Versión script",   VERSION_SCRIPT)
-
--- ── Sección: Repositorio ──────────────────────────────────────
 local secRepo = ui:CrearSeccion(tabInfo, "Repositorio")
+secRepo:AgregarTextoLargo("URL del repositorio",   URL_REPO)
+secRepo:AgregarTextoLargo("URL de la libreria UI", URL_LIBRERIA)
 
-local itemUrlRepo     = secRepo:AgregarTextoLargo("URL del repositorio",   URL_REPO)
-local itemUrlLib      = secRepo:AgregarTextoLargo("URL de la librería UI", URL_LIBRERIA)
+local secCap = ui:CrearSeccion(tabInfo, "Capacidades del Executor")
 
--- ── Sección: Capacidades del Executor ───────────────────────
-local secCapacidades = ui:CrearSeccion(tabInfo, "Capacidades del Executor")
-
--- Lista de funciones a verificar
-local capacidades = {
-    { "request / http_request", "request"       },
-    { "writefile",              "writefile"      },
-    { "readfile",               "readfile"       },
-    { "loadstring",             "loadstring"     },
-    { "hookfunction",           "hookfunction"   },
-    { "getgc",                  "getgc"          },
-    { "debug.getinfo",          "debug"          },
-    { "Drawing",                "Drawing"        },
-    { "gethui",                 "gethui"         },
+local listaCap = {
+    { "request / http_request", "request"      },
+    { "writefile",              "writefile"     },
+    { "readfile",               "readfile"      },
+    { "loadstring",             "loadstring"    },
+    { "hookfunction",           "hookfunction"  },
+    { "getgc",                  "getgc"         },
+    { "debug (lib)",            "debug"         },
+    { "Drawing (API)",          "Drawing"       },
+    { "gethui",                 "gethui"        },
+    { "setclipboard",           "setclipboard"  },
+    { "syn.request",            "syn"           },
 }
 
-local badgesCapacidades = {}
-for _, cap in ipairs(capacidades) do
-    local nombre, fn = cap[1], cap[2]
-    local soportada  = soportaFuncion(fn)
-    local badge      = secCapacidades:AgregarBadge(nombre, nil, soportada)
-    table.insert(badgesCapacidades, badge)
+for _, cap in ipairs(listaCap) do
+    local label, fn = cap[1], cap[2]
+    local activo = intentar(function() return soportaFuncion(fn) end, false)
+    secCap:AgregarBadge(label, nil, activo)
 end
 
--- ── Sección: Uptime ───────────────────────────────────────────
-local secUptime = ui:CrearSeccion(tabInfo, "Tiempo de Ejecución")
-
-local itemUptime      = secUptime:AgregarEtiqueta("Uptime del script",    "0s")
-local itemFPS         = secUptime:AgregarEtiqueta("FPS actual",           "–")
-local itemHora        = secUptime:AgregarEtiqueta("Hora de inicio",
-    tostring(os.date and os.date("%H:%M:%S") or "N/A"))
+local secUptime = ui:CrearSeccion(tabInfo, "Tiempo de Ejecucion")
+local itemUptime = secUptime:AgregarEtiqueta("Uptime",        "0s")
+local itemFPS    = secUptime:AgregarEtiqueta("FPS actual",    "-")
+local itemHora   = secUptime:AgregarEtiqueta("Inicio sesion", horaInicio())
 
 -- ════════════════════════════════════════════════════════════
---  Loop de actualización
+--  Loop de actualizacion (Heartbeat)
 -- ════════════════════════════════════════════════════════════
-local contadorActualizar = 0
+local acum = 0
 
 RunService.Heartbeat:Connect(function(dt)
-    contadorActualizar = contadorActualizar + dt
+    acum = acum + dt
+    if acum < 1 then return end
+    acum = 0
 
-    -- Actualizar cada 1 segundo
-    if contadorActualizar >= 1 then
-        contadorActualizar = 0
+    pcall(function()
+        itemUptime:Actualizar(formatoUptime(tick() - tickInicio))
+    end)
 
-        -- Uptime
-        local uptime = tick() - tickInicio
-        itemUptime:Actualizar(formatoUptime(uptime))
+    pcall(function()
+        if dt > 0 then
+            local fps = redondear(1 / dt)
+            local col = fps >= 55 and C.Exito
+                     or fps >= 30 and C.Advertencia
+                     or              C.Error
+            itemFPS:Actualizar(fps .. " fps", col)
+        end
+    end)
 
-        -- FPS
-        local fps = math.round(1 / dt)
-        local colorFps = fps >= 55 and UiLibrary.COLORES.Exito
-            or fps >= 30 and UiLibrary.COLORES.Advertencia
-            or UiLibrary.COLORES.Error
-        itemFPS:Actualizar(tostring(fps) .. " fps", colorFps)
+    -- Ping: GetNetworkPing no siempre existe, el pcall lo protege
+    pcall(function()
+        local ms = redondear(jugador:GetNetworkPing() * 1000)
+        local col = ms < 80  and C.Exito
+                 or ms < 150 and C.Advertencia
+                 or              C.Error
+        itemPing:Actualizar(ms .. " ms", col)
+    end)
 
-        -- Ping
-        pcall(function()
-            if jugador.GetNetworkPing then
-                local ms = math.round(jugador:GetNetworkPing() * 1000)
-                local cPing = ms < 80 and UiLibrary.COLORES.Exito
-                    or ms < 150 and UiLibrary.COLORES.Advertencia
-                    or UiLibrary.COLORES.Error
-                itemPing:Actualizar(tostring(ms) .. " ms", cPing)
-            end
-        end)
-
-        -- Avatar cargado
-        local tieneChar = jugador.Character ~= nil
-        itemHumanoidDesc:Actualizar(
-            tieneChar and "Sí" or "No",
-            tieneChar and UiLibrary.COLORES.Exito or UiLibrary.COLORES.Error
+    pcall(function()
+        local tiene = jugador.Character ~= nil
+        itemAvatar:Actualizar(
+            tiene and "Si" or "No",
+            tiene and C.Exito or C.Error
         )
+    end)
 
-        -- Equipo
+    pcall(function()
         itemEquipo:Actualizar(
-            (jugador.Team and jugador.Team.Name) or "Sin equipo"
+            jugador.Team and jugador.Team.Name or "Sin equipo"
         )
-    end
+    end)
 end)
 
--- ── Fin de carga ──────────────────────────────────────────────
-print(string.format(
-    "[ScriptHub] ✓ Cargado correctamente | Script v%s | UI Library v%s | Executor: %s",
+print(("[ScriptHub] v%s cargado OK | UI v%s | Executor: %s"):format(
     VERSION_SCRIPT,
     UiLibrary.ObtenerVersionLibreria(),
     obtenerExecutor()

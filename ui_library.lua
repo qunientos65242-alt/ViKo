@@ -12,11 +12,6 @@ function Library:Init(hubName, subText)
         MinimizeKey = Enum.KeyCode.LeftControl 
     })
 
-    local Tabs = {
-        Settings = Window:AddTab({ Title = "Configuración", Icon = "settings" })
-    }
-
-    function Library:GetTabs() return Tabs end
     function Library:GetWindow() return Window end
     function Library:GetFluent() return Fluent end
 

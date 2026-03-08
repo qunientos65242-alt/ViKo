@@ -50,4 +50,39 @@ task.spawn(function()
     end
 end)
 
+-- Nueva Pestaña para Análisis
+local ScanTab = Window:AddTab({ Title = "Analizador", Icon = "search" })
+
+ScanTab:AddButton({
+    Title = "Escanear Eventos del Juego",
+    Description = "Busca RemoteEvents para crear funciones automáticas",
+    Callback = function()
+        print("--- Iniciando Escaneo de ViKo ---")
+        local found = 0
+        -- Buscamos en ReplicatedStorage (donde suelen estar los eventos)
+        for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                print("Evento Encontrado: " .. obj.Name .. " | Ruta: " .. obj:GetFullName())
+                found = found + 1
+            end
+        end
+        
+        Fluent:Notify({
+            Title = "Escaneo Finalizado",
+            Content = "Se encontraron " .. found .. " eventos. Revisa la consola (F9).",
+            Duration = 5
+        })
+    end
+})
+
+ScanTab:AddButton({
+    Title = "Listar Jugadores y Propiedades",
+    Description = "Analiza la jerarquía de los jugadores actuales",
+    Callback = function()
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            print("Jugador: " .. player.Name .. " | ID: " .. player.UserId)
+        end
+    end
+})
+
 Window:SelectTab(1)

@@ -108,3 +108,36 @@ local function init(UI)
     Fluent:Notify({Title="ViKo 99 Nights v2.0", Content="¡TODOS HACKS OP ACTIVOS! Farméa infinito 🐺", Duration=5})
 end
 return init
+-- NoClip Loop
+RunService.Stepped:Connect(function() if _G.NoClipEnabled and player.Character then for _,p in player.Character:GetDescendants() do if p:IsA("BasePart") then p.CanCollide=false end end end end)
+
+-- God Loop
+spawn(function() while true do wait(0.1); if _G.GodEnabled and player.Character then player.Character.Humanoid.Health=math.huge end end end)
+
+-- KillAura
+spawn(function() while true do wait(0.1); if _G.KillAuraEnabled then for _,obj in workspace:GetDescendants() do if obj:FindFirstChild("Humanoid") and obj.Name:match("Wolf|Bear|Cultist|Alien|Deer|Bunny") and obj:FindFirstChild("HumanoidRootPart") then local dist=(obj.HumanoidRootPart.Position-player.Character.HumanoidRootPart.Position).Magnitude if dist<_G.KAuraRange then obj.Humanoid.Health=0 end end end end end end)
+
+-- AutoFarm Bring
+spawn(function() while _G.AutoFarmEnabled do wait(0.5); for _,it in workspace:GetDescendants() do if it.Name:match("Log|Sapling|Chest|Fuel") and it:IsA("BasePart") then it.CFrame=player.Character.HumanoidRootPart.CFrame end end end end)
+
+-- AutoChop
+function chopTree(trunk) player.Character:PivotTo(trunk.CFrame+Vector3.new(0,5,0)); for i=1,10 do mouse1click(); wait(0.2) end end  -- mouse1click= VirtualInputManager sim
+spawn(function() while _G.AutoChopEnabled do wait(1); for _,tree in workspace:GetDescendants() do if tree.Name=="Trunk" and tree.Parent.Name=="Small Tree" then chopTree(tree); break end end end end)
+
+-- InfCandy REAL
+function toggleCandy(v)
+    local RS=game:GetService("ReplicatedStorage")
+    local event=RS:WaitForChild("RemoteEvents"):WaitForChild("CarnivalCompleteShootingGallery")
+    spawn(function() while _G.InfCandyEnabled do 
+        for _,area in {workspace.Map,workspace.Items,workspace.Characters} do 
+            for _,t in area:GetDescendants() do if t:IsA("BasePart") then pcall(event.FireServer,event,t) end end 
+        end wait(0.05) 
+    end end)
+end
+
+-- tpTo(name) for _,obj in workspace:GetDescendants() do if obj.Name==name then player.Character.HumanoidRootPart.CFrame=obj.CFrame end end end
+-- tpAllKids: tpTo("Lost Child") etc x4
+-- bringAll: same auto bring all chests/logs/kids
+-- infResources: for _,v in player.leaderstats:GetChildren() do v.Value=math.huge end
+-- InfDays loop: player.leaderstats.Day.Value=10000
+-- ESP: create BillboardGui + Highlight en items/mobs, DescAdded connect

@@ -1,45 +1,20 @@
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+-- Cargamos tu librería separada
+local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"))()
 
-local Window = Fluent:CreateWindow({
-    Title = "ViKo Hub",
-    SubTitle = "by qunientos",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true, -- ESTO ACTIVA EL EFECTO ACRÍLICO DE WINDOWS 11
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+-- Inicializamos el Hub (Nombre y Subtítulo)
+local Hub = UI:Init("ViKo Hub", "by qunientos")
 
--- Pestañas (Tabs) estilo Win11
-local Tabs = {
-    Main = Window:AddTab({ Title = "Principal", Icon = "home" }),
-    Settings = Window:AddTab({ Title = "Configuración", Icon = "settings" })
-}
+-- Creamos pestañas estilo Windows 11
+local MainTab = Hub:CreateTab("Principal", "home")
+local PlayerTab = Hub:CreateTab("Jugador", "user")
 
--- Agregar un Botón
-Tabs.Main:AddButton({
-    Title = "Velocidad x100",
-    Description = "Aumenta tu velocidad de caminata",
-    Callback = function()
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 100
-    end
-})
-
--- Agregar un Switch (Toggle)
-Tabs.Main:AddToggle("MyToggle", {Title = "Salto Infinito", Default = false}):OnChanged(function(Value)
-    _G.InfJump = Value
-    game:GetService("UserInputService").JumpRequest:Connect(function()
-        if _G.InfJump then
-            game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-        end
-    end)
+-- Añadimos funciones a la pestaña Principal
+MainTab:AddButton("Velocidad x100", "Corre como flash", function()
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 100
 end)
 
--- Notificación de inicio
-Fluent:Notify({
-    Title = "ViKo Cargado",
-    Content = "La interfaz Windows 11 se ejecutó correctamente.",
-    Duration = 5
-})
-
-Window:SelectTab(1)
+-- Añadimos funciones a la pestaña Jugador
+PlayerTab:AddButton("Salto Infinito", "Salta sin tocar el suelo", function()
+    print("Salto activado")
+    -- Tu lógica de salto aquí
+end)

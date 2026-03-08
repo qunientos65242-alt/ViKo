@@ -14,6 +14,10 @@ local Window      = UI.Window
 local Tabs        = UI.Tabs
 local SaveManager = UI.SaveManager
 
+-- ── Cargar Funciones Externas (Features) ─────────────────────
+-- Enlace a tu repositorio para la lógica de velocidad
+local Features = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/refs/heads/main/features.lua"))()
+
 -- ── Constants ────────────────────────────────────────────────
 local SCRIPT_VERSION = "1.0.4"
 local URL_REPO       = "https://github.com/qunientos65242-alt/ViKo"
@@ -102,16 +106,12 @@ local function formatUptime(s)
     return ("%dh %dm %ds"):format(math.floor(s/3600), math.floor((s%3600)/60), s%60)
 end
 
--- ── Cargar Funciones Externas ────────────────────────────────
--- Nota: Asegúrate de que la URL apunte a donde subas el features.lua
-local Features = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/refs/heads/main/features.lua"))()
-
 -- ════════════════════════════════════════════════════════════
---  TAB: MAIN (Funciones)
+--  TAB: MAIN (Funciones de Movimiento)
 -- ════════════════════════════════════════════════════════════
 local MainSection = Tabs.Main:AddSection("Movement")
 
--- Switch para prender/apagar
+-- Switch para prender/apagar el Speed Hack
 Tabs.Main:AddToggle("SpeedToggle", {
     Title = "Enable Speed Hack",
     Default = false,

@@ -102,6 +102,44 @@ local function formatUptime(s)
     return ("%dh %dm %ds"):format(math.floor(s/3600), math.floor((s%3600)/60), s%60)
 end
 
+-- ── Cargar Funciones Externas ────────────────────────────────
+-- Nota: Asegúrate de que la URL apunte a donde subas el features.lua
+local Features = loadstring(game:HttpGet("TU_URL_DE_GITHUB_AQUI/features.lua"))()
+
+-- ════════════════════════════════════════════════════════════
+--  TAB: MAIN (Funciones)
+-- ════════════════════════════════════════════════════════════
+local MainSection = Tabs.Main:AddSection("Movement")
+
+-- Switch para prender/apagar
+Tabs.Main:AddToggle("SpeedToggle", {
+    Title = "Enable Speed Hack",
+    Default = false,
+    Callback = function(Value)
+        Features.Enabled = Value
+        if not Value then
+            -- Resetear a velocidad normal al apagar
+            local char = player.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.WalkSpeed = 16
+            end
+        end
+    end
+})
+
+-- Slider para cambiar el número de velocidad
+Tabs.Main:AddSlider("SpeedSlider", {
+    Title = "Walk Speed Custom",
+    Description = "Ajusta tu velocidad de carrera",
+    Default = 16,
+    Min = 16,
+    Max = 250,
+    Rounding = 0,
+    Callback = function(Value)
+        Features.WalkSpeedValue = Value
+    end
+})
+
 -- ════════════════════════════════════════════════════════════
 --  TAB: PROFILE
 -- ════════════════════════════════════════════════════════════

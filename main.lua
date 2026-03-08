@@ -1,11 +1,9 @@
--- Esperar a que el juego cargue completamente
-if not game:IsLoaded() then game.Loaded:Wait() end
-
+-- [[ ViKo Hub: Command Center Edition ]] --
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "ViKo Hub | Control Center",
-    SubTitle = "v2.0 Professional Edition",
+    Title = "ViKo Hub | " .. "Centro de Mando",
+    SubTitle = "v3.0 Ultra-Interface",
     TabWidth = 180,
     Size = UDim2.fromOffset(620, 480),
     Acrylic = true,
@@ -13,67 +11,111 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+-- Variables de Sistema
 local lp = game.Players.LocalPlayer
 local stats = game:GetService("Stats")
 
 local Tabs = {
-    Config = Window:AddTab({ Title = "Configuración", Icon = "settings" })
+    Settings = Window:AddTab({ Title = "Configuración", Icon = "settings" })
 }
 
--- SECCIÓN: PERFIL
-Tabs.Config:AddSection("Información del Perfil")
+-- ==========================================
+-- SECCIÓN: PERFIL (Información Exagerada)
+-- ==========================================
+Tabs.Settings:AddSection("Información de Identidad")
 
-local accountType = lp.MembershipType == Enum.MembershipType.Premium and "Premium" or "Normal"
+local function GetAccountType()
+    return lp.MembershipType == Enum.MembershipType.Premium and "💎 Premium" or "👤 Standard"
+end
 
-Tabs.Config:AddParagraph({
-    Title = "Datos del Usuario",
-    Content = string.format("Nombre: %s\nID: %d\nAntigüedad: %d días\nCuenta: %s", 
-        lp.Name, lp.UserId, lp.AccountAge, accountType)
+Tabs.Settings:AddParagraph({
+    Title = "Ficha del Sujeto",
+    Content = string.format(
+        "● Usuario: %s\n● ID Global: %d\n● Display: %s\n● Antigüedad: %d días\n● Estatus: %s\n● Región: %s",
+        lp.Name, lp.UserId, lp.DisplayName, lp.AccountAge, GetAccountType(), game:GetService("HttpService"):JSONDecode(game:HttpGet("http://ip-api.com/json/")).country or "Desconocida"
+    )
 })
 
--- SECCIÓN: TELEMETRÍA (Con protección contra errores)
-Tabs.Config:AddSection("Estadísticas del Sistema")
-local TechInfo = Tabs.Config:AddParagraph({ Title = "Telemetría en Vivo", Content = "Iniciando sensores..." })
+-- ==========================================
+-- SECCIÓN: APARIENCIA (Personalización Total)
+-- ==========================================
+Tabs.Settings:AddSection("Personalización Visual")
 
-task.spawn(function()
-    while task.wait(1) do
-        pcall(function() -- El pcall evita que el script se rompa si algo falla
-            local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
-            local fps = math.floor(1 / task.wait())
-            local pos = "N/A"
-            
-            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                local p = lp.Character.HumanoidRootPart.Position
-                pos = string.format("%.1f, %.1f, %.1f", p.X, p.Y, p.Z)
-            end
-            
-            TechInfo:SetDesc(string.format("Ping: %s\nFPS: %d\nPosición: %s", ping, fps, pos))
-        end)
-    end
-end)
-
--- SECCIÓN: APARIENCIA
-Tabs.Config:AddSection("Personalización")
-Tabs.Config:AddDropdown("ThemeDropdown", {
-    Title = "Tema de la Interfaz",
-    Values = {"Dark", "Light", "Amethyst", "Aqua"},
+Tabs.Settings:AddDropdown("ThemeDropdown", {
+    Title = "Tema Maestro",
+    Description = "Cambia el estilo visual de la UI",
+    Values = {"Dark", "Light", "Amethyst", "Aqua", "Rose"},
     Default = "Dark",
-    Callback = function(Value) Window:SetTheme(Value) end
+    Callback = function(Value)
+        Window:SetTheme(Value)
+    end
 })
 
--- SECCIÓN: OPTIMIZACIÓN
-Tabs.Config:AddToggle("LagReducer", {
+Tabs.Settings:AddToggle("AcrylicToggle", {
+    Title = "Modo Transparencia (Acrylic)",
+    Description = "Activa el efecto de desenfoque de Windows 11",
+    Default = true,
+    Callback = function(Value)
+        Window:SetAcrylic(Value)
+    end
+})
+
+-- ==========================================
+-- SECCIÓN: OPTIMIZACIÓN (FPS Boost)
+-- ==========================================
+Tabs.Settings:AddSection("Rendimiento y Optimización")
+
+Tabs.Settings:AddToggle("LagReducer", {
     Title = "Modo UI Optimizada",
-    Description = "Baja la calidad gráfica para ganar FPS",
+    Description = "Elimina texturas y sombras para máximo rendimiento",
     Default = false,
     Callback = function(Value)
         if Value then
+            -- Fuerza bruta para quitar lag
             for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
+                if v:IsA("BasePart") then
+                    v.Material = Enum.Material.SmoothPlastic
+                elseif v:IsA("Decal") or v:IsA("Texture") then
+                    v.Transparency = 1
+                end
             end
+            settings().Rendering.QualityLevel = 1
+            Fluent:Notify({Title = "Optimización", Content = "Modo Alto Rendimiento Activado", Duration = 3})
         end
     end
 })
 
+-- ==========================================
+-- SECCIÓN: LOCALIZACIÓN (Idiomas)
+-- ==========================================
+Tabs.Settings:AddSection("Idioma / Localization")
+
+local Translations = {
+    ["Español"] = "Centro de Mando",
+    ["English"] = "Command Center",
+    ["Português"] = "Centro de Comando",
+    ["Français"] = "Centre de Commande",
+    ["Deutsch"] = "Kommandozentrale"
+}
+
+Tabs.Settings:AddDropdown("LangDropdown", {
+    Title = "Idioma Global",
+    Description = "Traducción instantánea de la interfaz",
+    Values = {"Español", "English", "Português", "Français", "Deutsch"},
+    Default = "Español",
+    Callback = function(Value)
+        Window:SetTitle("ViKo Hub | " .. Translations[Value])
+        Fluent:Notify({
+            Title = "Sistema",
+            Content = "Idioma cambiado a " .. Value,
+            Duration = 2
+        })
+    end
+})
+
 Window:SelectTab(1)
-Fluent:Notify({Title = "ViKo Hub", Content = "Sistema de Control Cargado", Duration = 5})
+Fluent:Notify({
+    Title = "ViKo Hub",
+    Content = "Centro de Mando iniciado correctamente.",
+    Duration = 5
+})

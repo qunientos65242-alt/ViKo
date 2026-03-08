@@ -1,54 +1,61 @@
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"))()
-local InstanceUI = UI:Init("ViKo Hub", "Windows 11 Edition")
+local InstanceUI = UI:Init("ViKo Hub", "Edición Windows 11")
 local Tabs = InstanceUI:GetTabs()
 local Fluent = InstanceUI:GetFluent()
+local Window = InstanceUI:GetWindow()
 
 local Player = game.Players.LocalPlayer
 
 -- ==========================================
--- PESTAÑA DE INFORMACIÓN DE PERFIL (Doxeo)
+-- SECCIÓN DE PERFIL (TRADUCIDO)
 -- ==========================================
-Tabs.Profile:AddParagraph({
+local ProfileParagraph = Tabs.Profile:AddParagraph({
     Title = "Información del Usuario",
-    Content = "Nombre: " .. Player.Name .. 
-              "\nDisplayName: " .. Player.DisplayName ..
-              "\nUserId: " .. Player.UserId ..
-              "\nEdad de Cuenta: " .. Player.AccountAge .. " días" ..
-              "\nMembership: " .. tostring(Player.MembershipType) ..
-              "\nPaís (Región): " .. game:GetService("LocalizationService").RobloxLocaleId ..
-              "\nPlatform: " .. (game:GetService("UserInputService"):GetPlatform() == Enum.Platform.Windows and "PC / Windows" or "Mobile/Other")
+    Content = "Nombre de Usuario: " .. Player.Name .. 
+              "\nNombre de Pantalla: " .. Player.DisplayName ..
+              "\nID de Usuario: " .. Player.UserId ..
+              "\nAntigüedad: " .. Player.AccountAge .. " días" ..
+              "\nMembresía: " .. (tostring(Player.MembershipType):gsub("Enum.MembershipType.", "")) ..
+              "\nIdioma/País: " .. game:GetService("LocalizationService").RobloxLocaleId ..
+              "\nPlataforma: " .. (game:GetService("UserInputService"):GetPlatform() == Enum.Platform.Windows and "Computadora (Windows)" or "Dispositivo Móvil/Otro")
 })
 
 Tabs.Profile:AddParagraph({
     Title = "Datos de Red y Sistema",
-    Content = "Ping:Calculando..." .. 
-              "\nApp Version: " .. version() ..
-              "\nPlaceId: " .. game.PlaceId ..
-              "\nJobId: " .. game.JobId
+    Content = "Servidor Actual (JobId): \n" .. game.JobId ..
+              "\nID del Juego (PlaceId): " .. game.PlaceId ..
+              "\nVersión del Cliente: " .. version()
 })
 
 -- ==========================================
--- PESTAÑA DE CONFIGURACIÓN
+-- SECCIÓN DE CONFIGURACIÓN (TECLA ARREGLADA)
 -- ==========================================
-Tabs.Settings:AddKeybind("Keybind", {
-    Title = "Tecla de Menú",
-    Description = "Cambia la tecla para abrir/cerrar el Hub",
+Tabs.Settings:AddKeybind("MenuKeybind", {
+    Title = "Tecla del Menú",
+    Description = "Presiona una tecla para cambiar el acceso rápido",
     Default = "LeftControl",
     ChangedCallback = function(NewKey)
-        InstanceUI:GetWindow().MinimizeKey = NewKey
+        -- Corregimos el problema de la tecla aquí:
+        Window.MinimizeKey = NewKey
+        Fluent:Notify({
+            Title = "Configuración",
+            Content = "Nueva tecla asignada: " .. tostring(NewKey):gsub("Enum.KeyCode.", ""),
+            Duration = 3
+        })
     end
 })
 
 Tabs.Settings:AddButton({
-    Title = "Cerrar Interfaz",
-    Description = "Elimina la UI por completo",
+    Title = "Cerrar Completamente",
+    Description = "Elimina la interfaz de la memoria",
     Callback = function()
         Fluent:Destroy()
     end
 })
 
+-- Notificación inicial en español
 Fluent:Notify({
     Title = "ViKo Hub",
-    Content = "Módulo de Información y Configuración listos.",
+    Content = "Sistema iniciado correctamente. Usa Ctrl Izquierdo para minimizar.",
     Duration = 5
 })

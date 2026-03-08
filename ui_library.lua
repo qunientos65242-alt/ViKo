@@ -1,6 +1,3 @@
--- ============================================================
---  ui_library.lua | FIXED VERSION
--- ============================================================
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
@@ -15,7 +12,7 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl,
 })
 
--- REGISTRO DE TODAS LAS TABS (Asegúrate de que coincidan con main.lua)
+-- Se agregan TODAS las pestañas necesarias para que main.lua las encuentre
 local Tabs = {
     Main     = Window:AddTab({ Title = "Main",      Icon = "swords" }),
     Profile  = Window:AddTab({ Title = "Profile",   Icon = "user" }),

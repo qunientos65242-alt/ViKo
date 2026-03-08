@@ -211,57 +211,114 @@ local runtimeParagraph = Tabs.FullInfo:AddParagraph({
 -- ── Config Management ─────────────────────────────────────────
 Tabs.Settings:AddSection("Config Management")
 
--- Button to delete all saved configs
+-- Resolve the real folder Fluent uses to save configs
+local function getConfigFolder()
+    if SaveManager and SaveManager.Folder then
+        return SaveManager.Folder
+    end
+    return "fluentscripts"
+end
+
+-- Delete ALL config files
 Tabs.Settings:AddButton({
     Title       = "Delete All Configs",
-    Description = "Permanently removes all saved configuration files",
+    Description = "Permanently removes every saved configuration file",
     Callback    = function()
-        -- Get all config files and delete them
+        -- Require filesystem support
+        if not (listfiles and delfile) then
+            Fluent:Notify({
+                Title    = "Not Supported",
+                Content  = "Your executor does not support filesystem access.",
+                Duration = 4,
+            })
+            return
+        end
+
+        local folder  = getConfigFolder()
         local deleted = 0
-        pcall(function()
-            if listfiles then
-                local files = listfiles(SaveManager.Folder or "FluentScripts")
-                for _, file in ipairs(files or {}) do
-                    pcall(function()
-                        delfile(file)
+        local failed  = 0
+
+        local ok, files = pcall(listfiles, folder)
+        if ok and files then
+            for _, path in ipairs(files) do
+                -- Only target .json config files
+                if tostring(path):sub(-5) == ".json" then
+                    if pcall(delfile, path) then
                         deleted = deleted + 1
-                    end)
+                    else
+                        failed = failed + 1
+                    end
                 end
             end
-        end)
-        Fluent:Notify({
-            Title   = "Configs Deleted",
-            Content = deleted > 0
-                and ("Removed " .. deleted .. " config file(s) successfully.")
-                or  "No config files found to delete.",
-            Duration = 4,
-        })
+        end
+
+        if deleted > 0 then
+            Fluent:Notify({
+                Title    = "Configs Deleted",
+                Content  = "Removed " .. deleted .. " config(s)."
+                    .. (failed > 0 and " Failed: " .. failed .. "." or ""),
+                Duration = 5,
+            })
+        else
+            Fluent:Notify({
+                Title    = "Nothing to Delete",
+                Content  = "No config files found in: " .. folder,
+                Duration = 4,
+            })
+        end
     end,
 })
 
--- Button to delete the current config only
+-- Delete ONLY the currently selected config
 Tabs.Settings:AddButton({
     Title       = "Delete Current Config",
-    Description = "Removes only the currently loaded configuration",
+    Description = "Removes only the currently active configuration file",
     Callback    = function()
-        pcall(function()
-            local configName = SaveManager.CurrentConfig or "default"
-            local path = (SaveManager.Folder or "FluentScripts") .. "/" .. configName .. ".json"
-            if isfile and isfile(path) then
-                delfile(path)
+        if not (isfile and delfile) then
+            Fluent:Notify({
+                Title    = "Not Supported",
+                Content  = "Your executor does not support filesystem access.",
+                Duration = 4,
+            })
+            return
+        end
+
+        local configName = try(function()
+            return SaveManager and SaveManager.CurrentConfig or nil
+        end, nil)
+
+        if not configName or configName == "" then
+            Fluent:Notify({
+                Title    = "No Config Selected",
+                Content  = "Select a config from the list first.",
+                Duration = 4,
+            })
+            return
+        end
+
+        local path = getConfigFolder() .. "/" .. configName .. ".json"
+
+        if isfile(path) then
+            if pcall(delfile, path) then
                 Fluent:Notify({
                     Title    = "Config Deleted",
-                    Content  = "Deleted config: " .. configName,
+                    Content  = '"'.. configName ..'" removed successfully.',
                     Duration = 4,
                 })
             else
                 Fluent:Notify({
-                    Title    = "Not Found",
-                    Content  = "Could not find config file to delete.",
+                    Title    = "Delete Failed",
+                    Content  = "Could not delete the file. Check executor permissions.",
                     Duration = 4,
                 })
             end
-        end)
+        else
+            Fluent:Notify({
+                Title    = "File Not Found",
+                Content  = '"'.. configName ..'"' .. " does not exist.",
+                Duration = 4,
+            })
+        end
     end,
 })
 

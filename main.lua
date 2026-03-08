@@ -1,26 +1,22 @@
 -- ============================================================
 --  main.lua  |  ViKo Script Hub  v1.0.3
---  UI: dawid-scripts/Fluent  (https://github.com/dawid-scripts/Fluent)
+--  Logica principal. La UI se define en ui_library.lua.
 --  Repo: https://github.com/qunientos65242-alt/ViKo
 -- ============================================================
 
--- ── Cargar Fluent (repositorio oficial) ──────────────────────
-local Fluent = loadstring(game:HttpGet(
-    "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
+-- ── Cargar UI desde el repo ──────────────────────────────────
+local UI = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
 ))()
 
-local SaveManager = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"
-))()
+local Fluent = UI.Fluent
+local Window = UI.Window
+local Tabs   = UI.Tabs
 
-local InterfaceManager = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"
-))()
-
--- ── Constantes del script ────────────────────────────────────
+-- ── Constantes ───────────────────────────────────────────────
 local VERSION_SCRIPT = "1.0.3"
 local URL_REPO       = "https://github.com/qunientos65242-alt/ViKo"
-local URL_LIBRERIA   = "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
+local URL_UI         = "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
 
 -- ── Servicios ────────────────────────────────────────────────
 local Players       = game:GetService("Players")
@@ -30,7 +26,9 @@ local MarketService = game:GetService("MarketplaceService")
 local jugador    = Players.LocalPlayer
 local tickInicio = tick()
 
--- ── Helpers ──────────────────────────────────────────────────
+-- ════════════════════════════════════════════════════════════
+--  HELPERS
+-- ════════════════════════════════════════════════════════════
 local function intentar(fn, defecto)
     local ok, res = pcall(fn)
     if ok and res ~= nil then return res end
@@ -53,8 +51,8 @@ local function obtenerExecutor()
     if n then return tostring(n) end
 
     local firmas = {
-        {"KRNL_LOADED", "Krnl"}, {"syn", "Synapse X"}, {"fluxus", "Fluxus"},
-        {"DELTA_VERSION", "Delta"}, {"MACSPLOIT_VERSION", "MacSploit"},
+        {"KRNL_LOADED","Krnl"},{"syn","Synapse X"},{"fluxus","Fluxus"},
+        {"DELTA_VERSION","Delta"},{"MACSPLOIT_VERSION","MacSploit"},
     }
     for _, f in ipairs(firmas) do
         if intentar(function() return rawget(_G, f[1]) ~= nil end, false) then
@@ -102,78 +100,55 @@ local function formatoUptime(s)
 end
 
 -- ════════════════════════════════════════════════════════════
---  VENTANA PRINCIPAL
+--  POBLAR TAB: PERFIL
 -- ════════════════════════════════════════════════════════════
-local Window = Fluent:CreateWindow({
-    Title          = "ViKo Script Hub",
-    SubTitle       = "v" .. VERSION_SCRIPT .. " · " .. obtenerExecutor(),
-    TabWidth       = 160,
-    Size           = UDim2.fromOffset(580, 460),
-    Acrylic        = true,   -- efecto acrílico Windows 11
-    Theme          = "Dark",
-    MinimizeKey    = Enum.KeyCode.LeftControl,
-})
+local jid = intentar(function() return tostring(game.JobId) end, "N/A")
 
--- ════════════════════════════════════════════════════════════
---  TAB: PERFIL
--- ════════════════════════════════════════════════════════════
-local TabPerfil = Window:AddTab({ Title = "Perfil", Icon = "user" })
-
--- ── Sección Identidad ────────────────────────────────────────
-TabPerfil:AddParagraph({
+Tabs.Perfil:AddParagraph({
     Title   = "Identidad",
     Content = table.concat({
-        "Usuario : " .. jugador.Name,
-        "Display : " .. jugador.DisplayName,
-        "User ID : " .. tostring(jugador.UserId),
+        "Usuario    : " .. jugador.Name,
+        "Display    : " .. jugador.DisplayName,
+        "User ID    : " .. tostring(jugador.UserId),
         "Antiguedad : " .. edadCuenta(),
     }, "\n"),
 })
 
--- ── Sección Sesión Actual ────────────────────────────────────
-local jid = intentar(function() return tostring(game.JobId) end, "N/A")
-local jidCorto = #jid > 24 and (jid:sub(1, 22) .. "..") or jid
-
-TabPerfil:AddParagraph({
+Tabs.Perfil:AddParagraph({
     Title   = "Sesion Actual",
     Content = table.concat({
         "Juego    : " .. nombreJuego(),
         "Place ID : " .. tostring(game.PlaceId),
-        "Job ID   : " .. jidCorto,
+        "Job ID   : " .. (#jid > 24 and jid:sub(1,22).."..." or jid),
     }, "\n"),
 })
 
--- ── Sección Personaje (se actualiza en vivo) ─────────────────
-local parrafoPersonaje = TabPerfil:AddParagraph({
+local parrafoPersonaje = Tabs.Perfil:AddParagraph({
     Title   = "Personaje",
     Content = "Cargando...",
 })
 
 -- ════════════════════════════════════════════════════════════
---  TAB: INFO FULL
+--  POBLAR TAB: INFO FULL
 -- ════════════════════════════════════════════════════════════
-local TabInfo = Window:AddTab({ Title = "Info Full", Icon = "monitor" })
-
--- ── Executor ─────────────────────────────────────────────────
-TabInfo:AddParagraph({
+Tabs.InfoFull:AddParagraph({
     Title   = "Executor",
     Content = table.concat({
-        "Nombre   : " .. obtenerExecutor(),
-        "Fluent   : " .. tostring(Fluent.Version or "latest"),
-        "Script   : v" .. VERSION_SCRIPT,
+        "Nombre  : " .. obtenerExecutor(),
+        "Fluent  : " .. tostring(Fluent.Version or "latest"),
+        "Script  : v" .. VERSION_SCRIPT,
     }, "\n"),
 })
 
--- ── Repositorio ──────────────────────────────────────────────
-TabInfo:AddParagraph({
+Tabs.InfoFull:AddParagraph({
     Title   = "Repositorio",
     Content = table.concat({
         "Script Hub : " .. URL_REPO,
-        "UI Library : " .. URL_LIBRERIA,
+        "UI Library : " .. URL_UI,
     }, "\n"),
 })
 
--- ── Capacidades del executor ─────────────────────────────────
+-- Capacidades del executor
 local caps = {
     {"request / http_request", "request"},
     {"writefile",              "writefile"},
@@ -188,73 +163,63 @@ local caps = {
     {"syn.request",            "syn"},
 }
 
-local lineasCaps = {}
+local lineas = {}
 for _, cap in ipairs(caps) do
     local ok = intentar(function() return soporta(cap[2]) end, false)
-    table.insert(lineasCaps, (ok and "[SI]  " or "[NO]  ") .. cap[1])
+    table.insert(lineas, (ok and "[SI]  " or "[NO]  ") .. cap[1])
 end
 
-TabInfo:AddParagraph({
+Tabs.InfoFull:AddParagraph({
     Title   = "Capacidades del Executor",
-    Content = table.concat(lineasCaps, "\n"),
+    Content = table.concat(lineas, "\n"),
 })
 
--- ── Uptime (se actualiza en vivo) ────────────────────────────
-local parrafoUptime = TabInfo:AddParagraph({
+local parrafoUptime = Tabs.InfoFull:AddParagraph({
     Title   = "Tiempo de Ejecucion",
     Content = "Iniciando...",
 })
 
 -- ════════════════════════════════════════════════════════════
---  Loop de actualizacion
+--  LOOP DE ACTUALIZACION
 -- ════════════════════════════════════════════════════════════
 local acum = 0
-
 RunService.Heartbeat:Connect(function(dt)
     acum = acum + dt
     if acum < 1 then return end
     acum = 0
 
-    -- Uptime + FPS + Ping
     pcall(function()
-        local fps = redondear(dt > 0 and (1 / dt) or 0)
+        local fps = redondear(dt > 0 and (1/dt) or 0)
         local ms  = intentar(function()
             return redondear(jugador:GetNetworkPing() * 1000)
         end, 0)
-        local ut  = formatoUptime(tick() - tickInicio)
 
         parrafoUptime:SetDesc(table.concat({
-            "Uptime     : " .. ut,
+            "Uptime     : " .. formatoUptime(tick() - tickInicio),
             "FPS        : " .. fps .. " fps",
             "Ping       : " .. ms  .. " ms",
             "Hora inicio: " .. horaInicio(),
         }, "\n"))
     end)
 
-    -- Personaje en vivo
     pcall(function()
-        local char     = jugador.Character
-        local equipo   = jugador.Team and jugador.Team.Name or "Sin equipo"
-        local avatar   = char and "Si" or "No"
-        local hum      = char and char:FindFirstChildOfClass("Humanoid")
-        local vida     = hum and tostring(redondear(hum.Health)) .. " / " .. tostring(redondear(hum.MaxHealth)) or "N/A"
+        local char   = jugador.Character
+        local equipo = jugador.Team and jugador.Team.Name or "Sin equipo"
+        local hum    = char and char:FindFirstChildOfClass("Humanoid")
+        local vida   = hum
+            and (tostring(redondear(hum.Health)) .. " / " .. tostring(redondear(hum.MaxHealth)))
+            or "N/A"
 
         parrafoPersonaje:SetDesc(table.concat({
-            "Avatar   : " .. avatar,
-            "Equipo   : " .. equipo,
-            "Vida     : " .. vida,
+            "Avatar : " .. (char and "Si" or "No"),
+            "Equipo : " .. equipo,
+            "Vida   : " .. vida,
         }, "\n"))
     end)
 end)
 
--- ════════════════════════════════════════════════════════════
---  Inicializar addons de Fluent
--- ════════════════════════════════════════════════════════════
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:BuildInterfaceSection(TabInfo)
-SaveManager:BuildConfigSection(TabInfo)
-
+-- ── Titulo con executor detectado ───────────────────────────
+Window:SetSubtitle("v" .. VERSION_SCRIPT .. " · " .. obtenerExecutor())
 Window:SelectTab(1)
 
 Fluent:Notify({
@@ -263,8 +228,4 @@ Fluent:Notify({
     Duration = 5,
 })
 
-print(("[ViKo] v%s OK | Fluent v%s | Executor: %s"):format(
-    VERSION_SCRIPT,
-    tostring(Fluent.Version or "?"),
-    obtenerExecutor()
-))
+print(("[ViKo] v%s OK | Executor: %s"):format(VERSION_SCRIPT, obtenerExecutor()))

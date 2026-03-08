@@ -1,4 +1,5 @@
 local Library = {}
+-- Cargamos Fluent
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 function Library:Init(hubName, subText)
@@ -9,9 +10,10 @@ function Library:Init(hubName, subText)
         Size = UDim2.fromOffset(580, 460),
         Acrylic = true, 
         Theme = "Dark",
-        MinimizeKey = Enum.KeyCode.LeftControl
+        MinimizeKey = Enum.KeyCode.LeftControl -- Tecla inicial
     })
 
+    -- Traducción de etiquetas de la interfaz
     local Tabs = {
         Profile = Window:AddTab({ Title = "Perfil", Icon = "user" }),
         Settings = Window:AddTab({ Title = "Configuración", Icon = "settings" })

@@ -104,7 +104,7 @@ end
 
 -- ── Cargar Funciones Externas ────────────────────────────────
 -- Nota: Asegúrate de que la URL apunte a donde subas el features.lua
-local Features = loadstring(game:HttpGet("TU_URL_DE_GITHUB_AQUI/features.lua"))()
+local Features = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/refs/heads/main/features.lua"))()
 
 -- ════════════════════════════════════════════════════════════
 --  TAB: MAIN (Funciones)

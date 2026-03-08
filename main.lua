@@ -1,58 +1,63 @@
 -- ============================================================
 --  main.lua  |  ViKo Script Hub  v1.0.3
---  Logica principal. La UI se define en ui_library.lua.
---  Repo: https://github.com/qunientos65242-alt/ViKo
+--  Logica principal. La interfaz se define en ui_library.lua.
+--  Repositorio: https://github.com/qunientos65242-alt/ViKo
 -- ============================================================
 
--- ── Cargar UI desde el repo ──────────────────────────────────
+-- ── Cargar interfaz desde el repositorio ─────────────────────
 local UI = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
 ))()
 
-local Fluent = UI.Fluent
-local Window = UI.Window
-local Tabs   = UI.Tabs
+local Fluent   = UI.Fluent
+local Ventana  = UI.Ventana
+local Pestanas = UI.Pestanas
 
 -- ── Constantes ───────────────────────────────────────────────
 local VERSION_SCRIPT = "1.0.3"
 local URL_REPO       = "https://github.com/qunientos65242-alt/ViKo"
-local URL_UI         = "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
+local URL_INTERFAZ   = "https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"
 
--- ── Servicios ────────────────────────────────────────────────
-local Players       = game:GetService("Players")
-local RunService    = game:GetService("RunService")
-local MarketService = game:GetService("MarketplaceService")
+-- ── Servicios de Roblox ──────────────────────────────────────
+local Jugadores     = game:GetService("Players")
+local ServicioEje   = game:GetService("RunService")
+local ServicioMerc  = game:GetService("MarketplaceService")
 
-local jugador    = Players.LocalPlayer
+local jugador    = Jugadores.LocalPlayer
 local tickInicio = tick()
 
 -- ════════════════════════════════════════════════════════════
---  HELPERS
+--  FUNCIONES AUXILIARES
 -- ════════════════════════════════════════════════════════════
+
+-- Ejecuta una funcion con seguridad; devuelve 'defecto' si falla
 local function intentar(fn, defecto)
     local ok, res = pcall(fn)
     if ok and res ~= nil then return res end
     return defecto
 end
 
+-- Redondeo seguro (math.round no existe en Luau base)
 local function redondear(n)
     return math.floor(n + 0.5)
 end
 
+-- Detecta el nombre del executor en uso
 local function obtenerExecutor()
-    local n = intentar(function()
+    local nombre = intentar(function()
         return identifyexecutor and identifyexecutor() or nil
     end, nil)
-    if n then return tostring(n) end
+    if nombre then return tostring(nombre) end
 
-    n = intentar(function()
+    nombre = intentar(function()
         return getexecutorname and getexecutorname() or nil
     end, nil)
-    if n then return tostring(n) end
+    if nombre then return tostring(nombre) end
 
+    -- Deteccion por variables globales conocidas
     local firmas = {
-        {"KRNL_LOADED","Krnl"},{"syn","Synapse X"},{"fluxus","Fluxus"},
-        {"DELTA_VERSION","Delta"},{"MACSPLOIT_VERSION","MacSploit"},
+        {"KRNL_LOADED","Krnl"}, {"syn","Synapse X"}, {"fluxus","Fluxus"},
+        {"DELTA_VERSION","Delta"}, {"MACSPLOIT_VERSION","MacSploit"},
     }
     for _, f in ipairs(firmas) do
         if intentar(function() return rawget(_G, f[1]) ~= nil end, false) then
@@ -62,37 +67,42 @@ local function obtenerExecutor()
     return "Desconocido"
 end
 
-local function soporta(nombre)
+-- Comprueba si el executor soporta una funcion especifica
+local function soportaFuncion(nombre)
     if rawget(_G, nombre) ~= nil then return true end
-    local ok, env = pcall(function()
+    local ok, entorno = pcall(function()
         return type(getfenv) == "function" and getfenv() or nil
     end)
-    return ok and env and env[nombre] ~= nil
+    return ok and entorno and entorno[nombre] ~= nil
 end
 
+-- Devuelve la antiguedad de la cuenta en formato legible
 local function edadCuenta()
-    local d = intentar(function() return jugador.AccountAge end, nil)
-    if not d then return "N/A" end
-    if d < 1   then return "Hoy" end
-    if d < 30  then return d .. " dia(s)" end
-    if d < 365 then return ("%.1f mes(es)"):format(d / 30) end
-    return ("%.1f anno(s)"):format(d / 365)
+    local dias = intentar(function() return jugador.AccountAge end, nil)
+    if not dias then return "N/D" end
+    if dias < 1   then return "Hoy" end
+    if dias < 30  then return dias .. " dia(s)" end
+    if dias < 365 then return ("%.1f mes(es)"):format(dias / 30) end
+    return ("%.1f anno(s)"):format(dias / 365)
 end
 
+-- Obtiene el nombre del juego actual de forma segura
 local function nombreJuego()
     local info = intentar(function()
-        return MarketService:GetProductInfo(game.PlaceId)
+        return ServicioMerc:GetProductInfo(game.PlaceId)
     end, nil)
     return (info and info.Name) or tostring(game.PlaceId)
 end
 
-local function horaInicio()
+-- Devuelve la hora en que se inicio el script
+local function horaDeInicio()
     return intentar(function()
         return os.date and os.date("%H:%M:%S") or nil
     end, "t=" .. tostring(redondear(tickInicio)))
 end
 
-local function formatoUptime(s)
+-- Convierte segundos en formato legible hh mm ss
+local function formatoTiempoActivo(s)
     s = math.floor(s)
     if s < 60   then return s .. "s" end
     if s < 3600 then return ("%dm %ds"):format(math.floor(s/60), s%60) end
@@ -100,132 +110,143 @@ local function formatoUptime(s)
 end
 
 -- ════════════════════════════════════════════════════════════
---  POBLAR TAB: PERFIL
+--  PESTANA: PERFIL
 -- ════════════════════════════════════════════════════════════
-local jid = intentar(function() return tostring(game.JobId) end, "N/A")
+local idSesion = intentar(function() return tostring(game.JobId) end, "N/D")
 
-Tabs.Perfil:AddParagraph({
+-- Seccion Identidad
+Pestanas.Perfil:AddParagraph({
     Title   = "Identidad",
     Content = table.concat({
-        "Usuario    : " .. jugador.Name,
-        "Display    : " .. jugador.DisplayName,
-        "User ID    : " .. tostring(jugador.UserId),
-        "Antiguedad : " .. edadCuenta(),
+        "Usuario      : " .. jugador.Name,
+        "Nombre vis.  : " .. jugador.DisplayName,
+        "ID de usuario: " .. tostring(jugador.UserId),
+        "Antiguedad   : " .. edadCuenta(),
     }, "\n"),
 })
 
-Tabs.Perfil:AddParagraph({
+-- Seccion Sesion Actual
+Pestanas.Perfil:AddParagraph({
     Title   = "Sesion Actual",
     Content = table.concat({
         "Juego    : " .. nombreJuego(),
         "Place ID : " .. tostring(game.PlaceId),
-        "Job ID   : " .. (#jid > 24 and jid:sub(1,22).."..." or jid),
+        "ID Serv. : " .. (#idSesion > 24 and idSesion:sub(1,22).."..." or idSesion),
     }, "\n"),
 })
 
-local parrafoPersonaje = Tabs.Perfil:AddParagraph({
+-- Seccion Personaje (se actualiza en vivo)
+local parrafoPersonaje = Pestanas.Perfil:AddParagraph({
     Title   = "Personaje",
     Content = "Cargando...",
 })
 
 -- ════════════════════════════════════════════════════════════
---  POBLAR TAB: INFO FULL
+--  PESTANA: INFO FULL
 -- ════════════════════════════════════════════════════════════
-Tabs.InfoFull:AddParagraph({
+
+-- Seccion Executor
+Pestanas.InfoFull:AddParagraph({
     Title   = "Executor",
     Content = table.concat({
-        "Nombre  : " .. obtenerExecutor(),
-        "Fluent  : " .. tostring(Fluent.Version or "latest"),
-        "Script  : v" .. VERSION_SCRIPT,
+        "Nombre      : " .. obtenerExecutor(),
+        "Libreria UI : Fluent v" .. tostring(Fluent.Version or "ultima"),
+        "Version     : v" .. VERSION_SCRIPT,
     }, "\n"),
 })
 
-Tabs.InfoFull:AddParagraph({
+-- Seccion Repositorio
+Pestanas.InfoFull:AddParagraph({
     Title   = "Repositorio",
     Content = table.concat({
         "Script Hub : " .. URL_REPO,
-        "UI Library : " .. URL_UI,
+        "Interfaz   : " .. URL_INTERFAZ,
     }, "\n"),
 })
 
--- Capacidades del executor
-local caps = {
-    {"request / http_request", "request"},
-    {"writefile",              "writefile"},
-    {"readfile",               "readfile"},
-    {"loadstring",             "loadstring"},
-    {"hookfunction",           "hookfunction"},
-    {"getgc",                  "getgc"},
-    {"debug (lib)",            "debug"},
-    {"Drawing (API)",          "Drawing"},
-    {"gethui",                 "gethui"},
-    {"setclipboard",           "setclipboard"},
-    {"syn.request",            "syn"},
+-- Seccion Capacidades del Executor
+local capacidades = {
+    {"Peticiones HTTP  (request)",    "request"     },
+    {"Escribir archivo (writefile)",  "writefile"   },
+    {"Leer archivo     (readfile)",   "readfile"    },
+    {"Compilar codigo  (loadstring)", "loadstring"  },
+    {"Hooking          (hookfunction)","hookfunction"},
+    {"Recolector GC    (getgc)",      "getgc"       },
+    {"Biblioteca debug (debug)",      "debug"       },
+    {"API de dibujo    (Drawing)",    "Drawing"     },
+    {"GUI oculta       (gethui)",     "gethui"      },
+    {"Portapapeles     (setclipboard)","setclipboard"},
+    {"Synapse request  (syn)",        "syn"         },
 }
 
-local lineas = {}
-for _, cap in ipairs(caps) do
-    local ok = intentar(function() return soporta(cap[2]) end, false)
-    table.insert(lineas, (ok and "[SI]  " or "[NO]  ") .. cap[1])
+local lineasCapacidades = {}
+for _, cap in ipairs(capacidades) do
+    local disponible = intentar(function() return soportaFuncion(cap[2]) end, false)
+    table.insert(lineasCapacidades, (disponible and "[SI]  " or "[NO]  ") .. cap[1])
 end
 
-Tabs.InfoFull:AddParagraph({
+Pestanas.InfoFull:AddParagraph({
     Title   = "Capacidades del Executor",
-    Content = table.concat(lineas, "\n"),
+    Content = table.concat(lineasCapacidades, "\n"),
 })
 
-local parrafoUptime = Tabs.InfoFull:AddParagraph({
+-- Seccion Tiempo de Ejecucion (se actualiza en vivo)
+local parrafoTiempo = Pestanas.InfoFull:AddParagraph({
     Title   = "Tiempo de Ejecucion",
     Content = "Iniciando...",
 })
 
 -- ════════════════════════════════════════════════════════════
---  LOOP DE ACTUALIZACION
+--  BUCLE DE ACTUALIZACION EN TIEMPO REAL
 -- ════════════════════════════════════════════════════════════
-local acum = 0
-RunService.Heartbeat:Connect(function(dt)
-    acum = acum + dt
-    if acum < 1 then return end
-    acum = 0
+local acumulador = 0
 
+ServicioEje.Heartbeat:Connect(function(dt)
+    acumulador = acumulador + dt
+    if acumulador < 1 then return end
+    acumulador = 0
+
+    -- Actualizar tiempo de ejecucion, FPS y ping
     pcall(function()
-        local fps = redondear(dt > 0 and (1/dt) or 0)
-        local ms  = intentar(function()
+        local fps  = redondear(dt > 0 and (1/dt) or 0)
+        local ping = intentar(function()
             return redondear(jugador:GetNetworkPing() * 1000)
         end, 0)
 
-        parrafoUptime:SetDesc(table.concat({
-            "Uptime     : " .. formatoUptime(tick() - tickInicio),
-            "FPS        : " .. fps .. " fps",
-            "Ping       : " .. ms  .. " ms",
-            "Hora inicio: " .. horaInicio(),
+        parrafoTiempo:SetDesc(table.concat({
+            "Tiempo activo : " .. formatoTiempoActivo(tick() - tickInicio),
+            "FPS           : " .. fps  .. " fps",
+            "Ping          : " .. ping .. " ms",
+            "Hora de inicio: " .. horaDeInicio(),
         }, "\n"))
     end)
 
+    -- Actualizar datos del personaje
     pcall(function()
-        local char   = jugador.Character
-        local equipo = jugador.Team and jugador.Team.Name or "Sin equipo"
-        local hum    = char and char:FindFirstChildOfClass("Humanoid")
-        local vida   = hum
-            and (tostring(redondear(hum.Health)) .. " / " .. tostring(redondear(hum.MaxHealth)))
-            or "N/A"
+        local personaje = jugador.Character
+        local equipo    = jugador.Team and jugador.Team.Name or "Sin equipo"
+        local humanoide = personaje and personaje:FindFirstChildOfClass("Humanoid")
+        local vida      = humanoide
+            and (tostring(redondear(humanoide.Health)) .. " / " .. tostring(redondear(humanoide.MaxHealth)))
+            or "N/D"
 
         parrafoPersonaje:SetDesc(table.concat({
-            "Avatar : " .. (char and "Si" or "No"),
-            "Equipo : " .. equipo,
-            "Vida   : " .. vida,
+            "Avatar cargado : " .. (personaje and "Si" or "No"),
+            "Equipo         : " .. equipo,
+            "Vida           : " .. vida,
         }, "\n"))
     end)
 end)
 
--- ── Titulo con executor detectado ───────────────────────────
-Window:SetSubtitle("v" .. VERSION_SCRIPT .. " · " .. obtenerExecutor())
-Window:SelectTab(1)
+-- ── Ajustes finales de la ventana ────────────────────────────
+Ventana:SetSubtitle("v" .. VERSION_SCRIPT .. " · " .. obtenerExecutor())
+Ventana:SelectTab(1)
 
+-- Notificacion de bienvenida
 Fluent:Notify({
-    Title    = "ViKo cargado",
-    Content  = "v" .. VERSION_SCRIPT .. " · " .. obtenerExecutor(),
+    Title    = "ViKo cargado correctamente",
+    Content  = "Version " .. VERSION_SCRIPT .. " · " .. obtenerExecutor(),
     Duration = 5,
 })
 
-print(("[ViKo] v%s OK | Executor: %s"):format(VERSION_SCRIPT, obtenerExecutor()))
+print(("[ViKo] v%s iniciado | Executor: %s"):format(VERSION_SCRIPT, obtenerExecutor()))

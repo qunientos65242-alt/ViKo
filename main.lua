@@ -17,16 +17,48 @@ local VERSION_SCRIPT = "1.0.1"
 
 -- ── Carga segura de la libreria UI ───────────────────────────
 local function cargarLibreria()
+    -- Validar que la URL fue configurada
+    if REPO_USUARIO == "TU_USUARIO" or REPO_NOMBRE == "TU_REPOSITORIO" then
+        error(
+            "[ScriptHub] CONFIGURACION PENDIENTE\n" ..
+            "Edita main.lua y reemplaza:\n" ..
+            "  REPO_USUARIO = 'TU_USUARIO'   →  tu usuario de GitHub\n" ..
+            "  REPO_NOMBRE  = 'TU_REPOSITORIO' →  nombre de tu repo\n" ..
+            "URL actual (invalida): " .. URL_LIBRERIA
+        )
+    end
+
     local contenido
     local ok, err = pcall(function()
         contenido = game:HttpGet(URL_LIBRERIA, true)
     end)
 
     if not ok then
-        error("[ScriptHub] HttpGet fallo: " .. tostring(err))
+        error("[ScriptHub] HttpGet fallo: " .. tostring(err) ..
+              "\nURL: " .. URL_LIBRERIA)
     end
-    if type(contenido) ~= "string" or #contenido < 10 then
-        error("[ScriptHub] Respuesta vacia o invalida desde: " .. URL_LIBRERIA)
+
+    -- Detectar respuesta vacia
+    if type(contenido) ~= "string" or #contenido < 20 then
+        error("[ScriptHub] Respuesta vacia desde: " .. URL_LIBRERIA)
+    end
+
+    -- Detectar pagina de error de GitHub (404, 401, etc.)
+    -- Las respuestas de error HTML empiezan con "<!DOCTYPE" o "<html"
+    -- Los 404 de raw.githubusercontent devuelven "404: Not Found\n"
+    local inicioContenido = contenido:sub(1, 60):lower()
+    if inicioContenido:find("<!doctype")
+    or inicioContenido:find("<html")
+    or inicioContenido:find("^404")
+    or inicioContenido:find("not found")
+    or inicioContenido:find("400 bad request")
+    then
+        error(
+            "[ScriptHub] GitHub devolvio un error (probablemente 404).\n" ..
+            "Verifica que el archivo exista en la rama '" .. RAMA .. "'.\n" ..
+            "URL: " .. URL_LIBRERIA .. "\n" ..
+            "Respuesta: " .. contenido:sub(1, 80)
+        )
     end
 
     local fn, compErr = loadstring(contenido)

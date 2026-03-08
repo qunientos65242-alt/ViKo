@@ -1,20 +1,54 @@
--- Cargamos tu librería separada
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/qunientos65242-alt/ViKo/main/ui_library.lua"))()
+local InstanceUI = UI:Init("ViKo Hub", "Windows 11 Edition")
+local Tabs = InstanceUI:GetTabs()
+local Fluent = InstanceUI:GetFluent()
 
--- Inicializamos el Hub (Nombre y Subtítulo)
-local Hub = UI:Init("ViKo Hub", "by qunientos")
+local Player = game.Players.LocalPlayer
 
--- Creamos pestañas estilo Windows 11
-local MainTab = Hub:CreateTab("Principal", "home")
-local PlayerTab = Hub:CreateTab("Jugador", "user")
+-- ==========================================
+-- PESTAÑA DE INFORMACIÓN DE PERFIL (Doxeo)
+-- ==========================================
+Tabs.Profile:AddParagraph({
+    Title = "Información del Usuario",
+    Content = "Nombre: " .. Player.Name .. 
+              "\nDisplayName: " .. Player.DisplayName ..
+              "\nUserId: " .. Player.UserId ..
+              "\nEdad de Cuenta: " .. Player.AccountAge .. " días" ..
+              "\nMembership: " .. tostring(Player.MembershipType) ..
+              "\nPaís (Región): " .. game:GetService("LocalizationService").RobloxLocaleId ..
+              "\nPlatform: " .. (game:GetService("UserInputService"):GetPlatform() == Enum.Platform.Windows and "PC / Windows" or "Mobile/Other")
+})
 
--- Añadimos funciones a la pestaña Principal
-MainTab:AddButton("Velocidad x100", "Corre como flash", function()
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 100
-end)
+Tabs.Profile:AddParagraph({
+    Title = "Datos de Red y Sistema",
+    Content = "Ping:Calculando..." .. 
+              "\nApp Version: " .. version() ..
+              "\nPlaceId: " .. game.PlaceId ..
+              "\nJobId: " .. game.JobId
+})
 
--- Añadimos funciones a la pestaña Jugador
-PlayerTab:AddButton("Salto Infinito", "Salta sin tocar el suelo", function()
-    print("Salto activado")
-    -- Tu lógica de salto aquí
-end)
+-- ==========================================
+-- PESTAÑA DE CONFIGURACIÓN
+-- ==========================================
+Tabs.Settings:AddKeybind("Keybind", {
+    Title = "Tecla de Menú",
+    Description = "Cambia la tecla para abrir/cerrar el Hub",
+    Default = "LeftControl",
+    ChangedCallback = function(NewKey)
+        InstanceUI:GetWindow().MinimizeKey = NewKey
+    end
+})
+
+Tabs.Settings:AddButton({
+    Title = "Cerrar Interfaz",
+    Description = "Elimina la UI por completo",
+    Callback = function()
+        Fluent:Destroy()
+    end
+})
+
+Fluent:Notify({
+    Title = "ViKo Hub",
+    Content = "Módulo de Información y Configuración listos.",
+    Duration = 5
+})

@@ -37,6 +37,13 @@ local Tabs = {
     Settings = Window:AddTab({ Title = "Settings",  Icon = "settings" }),
 }
 
+local Tabs = {
+    Main     = Window:AddTab({ Title = "Main",     Icon = "swords"   }), -- NUEVA
+    Profile  = Window:AddTab({ Title = "Profile",  Icon = "user"     }),
+    FullInfo = Window:AddTab({ Title = "Full Info", Icon = "monitor"  }),
+    Settings = Window:AddTab({ Title = "Settings",  Icon = "settings" }),
+}
+
 -- ── Initialize addons ─────────────────────────────────────────
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
